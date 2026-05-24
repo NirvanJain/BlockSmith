@@ -1,74 +1,32 @@
 use axum::{
-    extract::State,
-    routing::{get, post},
-    Json, Router,
+    routing::get,
+    Router,
 };
 
-use serde::{Deserialize, Serialize};
-
-use std::sync::{Arc, Mutex};
-
-use crate::block::Block;
-use crate::blockchain::Blockchain;
-
-// Shared blockchain type
-pub type SharedBlockchain = Arc<Mutex<Blockchain>>;
-
-#[derive(Deserialize)]
-pub struct AddBlockRequest {
-    pub data: String,
-}
-
-#[derive(Serialize)]
-pub struct ValidationResponse {
-    pub valid: bool,
-}
-
-// Create app routes
-pub fn create_router(
-    blockchain: SharedBlockchain,
-) -> Router {
+pub fn create_routes() -> Router {
     Router::new()
-        .route("/", get(home))
-        .route("/blocks", get(get_blocks))
-        .route("/add", post(add_block))
-        .route("/validate", get(validate_chain))
-        .with_state(blockchain)
+        .route(
+            "/health",
+            get(health_check),
+        )
+        .route(
+            "/api/v1/blocks",
+            get(get_blocks),
+        )
+        .route(
+            "/api/v1/validate",
+            get(validate_chain),
+        )
 }
 
-// Home route
-async fn home() -> &'static str {
-    "Welcome to BlockSmith API"
+async fn health_check() -> &'static str {
+    "OK"
 }
 
-// Get all blocks
-async fn get_blocks(
-    State(blockchain): State<SharedBlockchain>,
-) -> Json<Vec<Block>> {
-    let chain = blockchain.lock().unwrap();
-
-    Json(chain.chain.clone())
+async fn get_blocks() -> &'static str {
+    "Fetching blockchain blocks"
 }
 
-// Add new block
-async fn add_block(
-    State(blockchain): State<SharedBlockchain>,
-    Json(payload): Json<AddBlockRequest>,
-) -> Json<String> {
-    let mut chain = blockchain.lock().unwrap();
-
-    chain.add_block(payload.data);
-
-    Json("Block added successfully".to_string())
-}
-
-// Validate blockchain
-async fn validate_chain(
-    State(blockchain): State<SharedBlockchain>,
-) -> Json<ValidationResponse> {
-    let chain = blockchain.lock().unwrap();
-
-    Json(ValidationResponse {
-        valid: chain.is_valid(),
-    })
+async fn validate_chain() -> &'static str {
+    "Blockchain validated"
 }

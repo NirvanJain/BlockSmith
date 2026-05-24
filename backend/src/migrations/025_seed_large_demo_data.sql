@@ -1,0 +1,115 @@
+INSERT INTO users
+(
+    github_username,
+    reputation_score,
+    total_contributions
+)
+VALUES
+(
+    'alice',
+    250,
+    40
+),
+(
+    'bob',
+    180,
+    28
+),
+(
+    'charlie',
+    320,
+    52
+);
+
+INSERT INTO repositories
+(
+    owner,
+    name,
+    full_name,
+    stars,
+    forks,
+    language
+)
+VALUES
+(
+    'nirvanjain',
+    'BlockSmith',
+    'nirvanjain/BlockSmith',
+    120,
+    35,
+    'Rust'
+);
+
+INSERT INTO contributions
+(
+    user_id,
+    repository,
+    contribution_type,
+    contribution_link,
+    verified
+)
+VALUES
+(
+    1,
+    'BlockSmith',
+    'pull_request',
+    'https://github.com/example/pr/1',
+    TRUE
+),
+(
+    2,
+    'BlockSmith',
+    'issue',
+    'https://github.com/example/issue/2',
+    TRUE
+),
+(
+    3,
+    'BlockSmith',
+    'commit',
+    'https://github.com/example/commit/3',
+    TRUE
+);
+
+INSERT INTO blocks
+(
+    block_index,
+    contributor,
+    repository,
+    contribution_type,
+    contribution_link,
+    previous_hash,
+    hash,
+    timestamp
+)
+VALUES
+(
+    1,
+    'alice',
+    'BlockSmith',
+    'pull_request',
+    'https://github.com/example/pr/1',
+    '0000',
+    'hash_001',
+    NOW()::TEXT
+),
+(
+    2,
+    'bob',
+    'BlockSmith',
+    'issue',
+    'https://github.com/example/issue/2',
+    'hash_001',
+    'hash_002',
+    NOW()::TEXT
+),
+(
+    3,
+    'charlie',
+    'BlockSmith',
+    'commit',
+    'https://github.com/example/commit/3',
+    'hash_002',
+    'hash_003',
+    NOW()::TEXT
+);

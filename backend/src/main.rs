@@ -1,36 +1,71 @@
-mod block;
-mod blockchain;
+use axum::{
+    routing::get,
+    Router,
+};
 
-use blockchain::Blockchain;
+use dotenvy::dotenv;
+use std::net::SocketAddr;
 
-fn main() {
-    println!("==============================");
-    println!("      BlockSmith Started");
-    println!("==============================");
+use blocksmith::{
+    config::{
+        app::AppConfig,
+        database::DatabaseConfig,
+    },
+    database::connection_pool::create_pool,
+    middleware::cors::cors_layer,
+};
 
-    // Create blockchain
-    let mut blockchain = Blockchain::new();
+mod routes;
 
-    // Add blocks
-    blockchain.add_block(
-        "Nirvan sent 5 BTC to Alex".to_string(),
+#[tokio::main]
+async fn main() {
+    dotenv().ok();
+
+    let app_config =
+        AppConfig::from_env();
+
+    let database_config =
+        DatabaseConfig::from_env();
+
+    let _pool = create_pool(
+        &database_config.database_url,
+    )
+    .await
+    .expect(
+        "Failed to connect database",
     );
 
-    blockchain.add_block(
-        "Alex sent 2 BTC to Sarah".to_string(),
-    );
+    let app = Router::new()
+        .route(
+            "/",
+            get(|| async {
+                "BlockSmith API Running"
+            }),
+        )
+        .merge(routes::create_routes())
+        .layer(cors_layer());
 
-    blockchain.add_block(
-        "Sarah minted an NFT".to_string(),
-    );
+    let address = SocketAddr::from((
+        [127, 0, 0, 1],
+        app_config.port,
+    ));
 
-    // Print blockchain
-    blockchain.print_chain();
-
-    println!("\n==============================");
     println!(
-        "Blockchain Valid: {}",
-        blockchain.is_valid()
+        "Server running on {}",
+        address
     );
-    println!("==============================");
+
+let listener =
+    tokio::net::TcpListener::bind(
+        address,
+    )
+    .await
+    .unwrap();
+
+axum::serve(
+    listener,
+    app,
+)
+.await
+.unwrap();
 }

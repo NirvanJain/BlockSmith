@@ -1,0 +1,5 @@
+ALTER TABLE users
+ADD COLUMN trust_score INTEGER DEFAULT 0;
+
+ALTER TABLE users
+ADD COLUMN verified_contributions INTEGER DEFAULT 0;

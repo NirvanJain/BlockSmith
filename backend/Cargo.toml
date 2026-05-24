@@ -4,22 +4,151 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# Web framework
-axum = "0.7"
 
-# Async runtime
-tokio = { version = "1", features = ["full"] }
+# =========================
+# Web Framework
+# =========================
+axum = { version = "0.7", features = ["ws"] }
 
-# Serialization / Deserialization
-serde = { version = "1", features = ["derive"] }
+tower = "0.4"
+
+tower-http = { version = "0.5", features = [
+    "cors",
+    "trace",
+] }
+
+# =========================
+# Async Runtime
+# =========================
+tokio = { version = "1", features = [
+    "full",
+] }
+
+# =========================
+# Serialization
+# =========================
+serde = { version = "1", features = [
+    "derive",
+] }
+
 serde_json = "1"
 
-# SHA256 hashing
+# =========================
+# Database
+# =========================
+sqlx = { version = "0.7", features = [
+    "runtime-tokio-rustls",
+    "postgres",
+    "chrono",
+    "uuid",
+    "json",
+    "macros",
+] }
+
+# =========================
+# Environment Variables
+# =========================
+dotenvy = "0.15"
+
+# =========================
+# HTTP Client
+# =========================
+reqwest = { version = "0.12", features = [
+    "json",
+    "rustls-tls",
+] }
+
+# =========================
+# JWT Authentication
+# =========================
+jsonwebtoken = "9"
+
+# =========================
+# Cryptography
+# =========================
 sha2 = "0.10"
 
-# Date & time
-chrono = "0.4"
-
-# Hex encoding
 hex = "0.4"
 
+# =========================
+# UUID
+# =========================
+uuid = { version = "1", features = [
+    "v4",
+    "serde",
+] }
+
+# =========================
+# Date & Time
+# =========================
+chrono = { version = "0.4", features = [
+    "serde",
+] }
+
+# =========================
+# WebSockets
+# =========================
+tokio-tungstenite = "0.21"
+
+futures-util = "0.3"
+
+# =========================
+# Logging & Tracing
+# =========================
+tracing = "0.1"
+
+tracing-subscriber = { version = "0.3", features = [
+    "env-filter",
+] }
+
+# =========================
+# Redis Cache
+# =========================
+redis = { version = "0.25", features = [
+    "tokio-comp",
+] }
+
+# =========================
+# Validation
+# =========================
+validator = { version = "0.18", features = [
+    "derive",
+] }
+
+# =========================
+# Random Utilities
+# =========================
+rand = "0.8"
+
+# =========================
+# Async Traits
+# =========================
+async-trait = "0.1"
+
+# =========================
+# Error Handling
+# =========================
+thiserror = "1"
+
+anyhow = "1"
+
+# =========================
+# URL Encoding
+# =========================
+urlencoding = "2"
+
+# =========================
+# Configuration
+# =========================
+config = "0.14"
+
+# =========================
+# Testing
+# =========================
+mockall = "0.12"
+
+[dev-dependencies]
+
+tokio-test = "0.4"
+
+pretty_assertions = "1"
