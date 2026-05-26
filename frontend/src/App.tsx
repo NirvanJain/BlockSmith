@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import type { View, Block, LeaderboardEntry, RepoEntry, LogEntry } from "./types";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
 import ChainExplorer from "./components/ChainExplorer";
@@ -9,6 +10,7 @@ import Repositories from "./components/Repositories";
 import VerifyChain from "./components/VerifyChain";
 import AuditLog from "./components/AuditLog";
 import ApiKeys from "./components/ApiKeys";
+import AuthPage from "./pages/AuthPage";
 
 // ─── Demo seed data ────────────────────────────────────────
 const SEED_BLOCKS: Block[] = [
@@ -98,7 +100,11 @@ const reputationFor = (type: string): number => {
   return 1;
 };
 
-export default function App() {
+// ─── Page type ─────────────────────────────────────────────
+type Page = "auth" | "app";
+
+// ─── Dashboard shell (requires auth) ───────────────────────
+function DashboardShell({ onSignOut }: { onSignOut: () => void }) {
   const [view, setView] = useState<View>("dashboard");
   const [blocks, setBlocks] = useState<Block[]>(SEED_BLOCKS);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(SEED_LEADERBOARD);
@@ -142,7 +148,6 @@ export default function App() {
         const prev = blocks[blocks.length - 1];
         const index = prev.index + 1;
         const timestamp = new Date().toISOString();
-        // Simulate hash (in production this comes from the Rust backend)
         const fakeHash = Array.from({ length: 60 }, () =>
           "0123456789abcdef"[Math.floor(Math.random() * 16)]
         ).join("");
@@ -160,7 +165,6 @@ export default function App() {
 
         setBlocks((b) => [...b, newBlock]);
 
-        // Update leaderboard
         const pts = reputationFor(data.contribution_type);
         setLeaderboard((lb) => {
           const existing = lb.find((e) => e.github_username === data.contributor);
@@ -188,7 +192,6 @@ export default function App() {
               },
             ];
           }
-          // Re-rank
           return updated
             .sort((a, b) => b.reputation_score - a.reputation_score)
             .map((e, i) => ({ ...e, rank: i + 1 }));
@@ -213,7 +216,6 @@ export default function App() {
     try {
       await new Promise((r) => setTimeout(r, 1200));
       addLog("info", `Chain validation started — ${blocks.length} blocks to check`);
-      // Simulate backend validation
       let valid = true;
       for (let i = 1; i < blocks.length; i++) {
         if (blocks[i].previous_hash !== blocks[i - 1].hash) {
@@ -252,7 +254,6 @@ export default function App() {
       setRepos((r) => [...r, newRepo]);
       addLog("info", `Repository connected — ${owner}/${repo} — webhook registration pending`);
       showToast(`${owner}/${repo} connected — syncing...`, "ok");
-      // Simulate transition to active
       setTimeout(() => {
         setRepos((r) =>
           r.map((x) =>
@@ -336,6 +337,7 @@ export default function App() {
           onNavigate={setView}
           chainValid={chainValid}
           blockCount={blocks.length}
+          onSignOut={onSignOut}
         />
 
         {/* Main */}
@@ -377,5 +379,47 @@ export default function App() {
         ))}
       </div>
     </>
+  );
+}
+
+// ─── App Root (auth-aware routing) ─────────────────────────
+function AppRoot() {
+  const { isAuthenticated, isLoading, logout } = useAuth();
+  const [page, setPage] = useState<Page>("auth");
+
+  // When auth state resolves, if authenticated go straight to app
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      setPage("app");
+    }
+  }, [isAuthenticated, isLoading]);
+
+  const handleSignOut = () => {
+    logout();
+    setPage("auth");
+  };
+
+  // Show a minimal loading state while rehydrating session
+  if (isLoading) {
+    return (
+      <div className="term-root">
+        <div className="term-spin" style={{ width: 16, height: 16 }} />
+      </div>
+    );
+  }
+
+  if (page === "auth") {
+    return <AuthPage />;
+  }
+
+  return <DashboardShell onSignOut={handleSignOut} />;
+}
+
+// ─── Root export (wraps everything in AuthProvider) ─────────
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppRoot />
+    </AuthProvider>
   );
 }

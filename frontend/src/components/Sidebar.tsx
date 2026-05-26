@@ -1,10 +1,12 @@
 import type { View } from "../types";
+import { useAuth } from "../hooks/useAuth";
 
 interface SidebarProps {
   activeView: View;
   onNavigate: (view: View) => void;
   chainValid: boolean | null;
   blockCount: number;
+  onSignOut: () => void;
 }
 
 const sections: {
@@ -41,7 +43,9 @@ export default function Sidebar({
   onNavigate,
   chainValid,
   blockCount,
+  onSignOut,
 }: SidebarProps) {
+  const { user } = useAuth();
   return (
     <aside className="sidebar">
       {/* Brand */}
@@ -94,6 +98,34 @@ export default function Sidebar({
           {blockCount} block{blockCount !== 1 ? "s" : ""} indexed
         </div>
       </div>
+
+      {/* User profile */}
+      {user && (
+        <div className="sidebar-user">
+          <div className="sidebar-user-avatar">
+            <img
+              src={user.avatar_url}
+              alt={user.login}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src =
+                  `https://api.dicebear.com/7.x/initials/svg?seed=${user.login}`;
+              }}
+            />
+          </div>
+          <div className="sidebar-user-info">
+            <div className="sidebar-user-name">{user.name || user.login}</div>
+            <div className="sidebar-user-handle">@{user.login}</div>
+          </div>
+          <button
+            className="sidebar-signout-btn"
+            onClick={onSignOut}
+            title="Sign out"
+            id="sidebar-signout"
+          >
+            ⏻
+          </button>
+        </div>
+      )}
     </aside>
   );
 }
