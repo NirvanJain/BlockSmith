@@ -24,4 +24,4 @@ impl AppConfig {
                 .unwrap_or(3000),
         }
     }
-}
+} 
