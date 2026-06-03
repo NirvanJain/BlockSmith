@@ -23,7 +23,7 @@ pub async fn auth_middleware(
         _ => return Err(StatusCode::UNAUTHORIZED),
     };
 
-    match verify_jwt(token) {
+    match verify_jwt(token).await {
         Ok(claims) => {
             request.extensions_mut().insert(
                 claims.sub,

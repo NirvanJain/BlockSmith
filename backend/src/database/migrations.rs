@@ -1,21 +1,10 @@
-pub fn run_migrations() {
-    println!(
-        "Running BlockSmith database migrations..."
-    );
+use sqlx::{Pool, Postgres};
 
-    println!(
-        "Migration 001 completed"
-    );
-
-    println!(
-        "Migration 002 completed"
-    );
-
-    println!(
-        "Migration 003 completed"
-    );
-
-    println!(
-        "All migrations completed successfully"
-    );
+pub async fn run_migrations(pool: &Pool<Postgres>) -> Result<(), sqlx::migrate::MigrateError> {
+    println!("Running OpenHub database migrations...");
+    sqlx::migrate!("./migrations")
+        .run(pool)
+        .await?;
+    println!("All migrations completed successfully");
+    Ok(())
 }

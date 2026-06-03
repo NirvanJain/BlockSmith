@@ -62,6 +62,8 @@ reqwest = { version = "0.12", features = [
 # JWT Authentication
 # =========================
 jsonwebtoken = "9"
+svix = "1.0"
+octocrab = "0.38"
 
 # =========================
 # Cryptography
@@ -69,6 +71,7 @@ jsonwebtoken = "9"
 sha2 = "0.10"
 
 hex = "0.4"
+hmac = "0.12"
 
 # =========================
 # UUID
@@ -152,3 +155,7 @@ mockall = "0.12"
 tokio-test = "0.4"
 
 pretty_assertions = "1"
+
+[[bin]]
+name = "oauth_listener"
+path = "src/bin/oauth_listener.rs"

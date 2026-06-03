@@ -27,7 +27,7 @@ async fn main() {
     let database_config =
         DatabaseConfig::from_env();
 
-    let _pool = create_pool(
+    let pool = create_pool(
         &database_config.database_url,
     )
     .await
@@ -35,14 +35,21 @@ async fn main() {
         "Failed to connect database",
     );
 
+    blocksmith::database::migrations::run_migrations(&pool)
+        .await
+        .expect("Failed to run database migrations");
+
+    let ws_state = std::sync::Arc::new(blocksmith::realtime::websockets::WsState::default());
+
     let app = Router::new()
         .route(
             "/",
             get(|| async {
-                "BlockSmith API Running"
+                "OpenHub API Running"
             }),
         )
-        .merge(routes::create_routes())
+        .merge(routes::create_routes(ws_state))
+        .with_state(pool)
         .layer(cors_layer());
 
     let address = SocketAddr::from((
