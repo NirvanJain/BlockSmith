@@ -46,7 +46,7 @@ pub async fn get_latest_block_hash(
         ",
     )
     .fetch_optional(pool)
-    .await?;
+    .await?; 
 
     if let Some(block) = row {
         Ok(Some(block.get("hash")))

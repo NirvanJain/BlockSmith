@@ -21,7 +21,7 @@ pub async fn fetch_repo_data(
     println!("PRs: {:?}", pulls.is_ok());
 
     println!(
-        "Issues: {:?}",
+        "Issues: {:?}", 
         issues.is_ok()
     );
 
