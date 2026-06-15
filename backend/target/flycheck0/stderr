@@ -1,5 +1,5 @@
-   0.362963400s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="blocksmith"}: cargo::core::compiler::fingerprint: fingerprint error for blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend)/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("blocksmith", ["lib"], "C:\\Users\\jainn\\OneDrive\\Documents\\Desktop\\Everything\\Side_Projects\\BlockSmith\\BlockSmith\\backend\\src\\lib.rs", Edition2021) }
-   0.363024700s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="blocksmith"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend\target\debug\.fingerprint\blocksmith-266ffc14945a69ee\lib-blocksmith`
+   0.399678000s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="blocksmith"}: cargo::core::compiler::fingerprint: fingerprint error for blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend)/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("blocksmith", ["lib"], "C:\\Users\\jainn\\OneDrive\\Documents\\Desktop\\Everything\\Side_Projects\\BlockSmith\\BlockSmith\\backend\\src\\lib.rs", Edition2021) }
+   0.399770800s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="blocksmith"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend\target\debug\.fingerprint\blocksmith-266ffc14945a69ee\lib-blocksmith`
 
 Caused by:
     The system cannot find the file specified. (os error 2)
@@ -26,8 +26,8 @@ Stack backtrace:
   18: git_midx_writer_dump
   19: BaseThreadInitThunk
   20: RtlUserThreadStart
-   0.476941900s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="blocksmith"}: cargo::core::compiler::fingerprint: fingerprint error for blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend)/Check { test: true }/TargetInner { name_inferred: true, ..: lib_target("blocksmith", ["lib"], "C:\\Users\\jainn\\OneDrive\\Documents\\Desktop\\Everything\\Side_Projects\\BlockSmith\\BlockSmith\\backend\\src\\lib.rs", Edition2021) }
-   0.476984400s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="blocksmith"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend\target\debug\.fingerprint\blocksmith-ebf08026bff58531\test-lib-blocksmith`
+   0.514980100s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="blocksmith"}: cargo::core::compiler::fingerprint: fingerprint error for blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend)/Check { test: true }/TargetInner { name_inferred: true, ..: lib_target("blocksmith", ["lib"], "C:\\Users\\jainn\\OneDrive\\Documents\\Desktop\\Everything\\Side_Projects\\BlockSmith\\BlockSmith\\backend\\src\\lib.rs", Edition2021) }
+   0.515012500s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="blocksmith"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend\target\debug\.fingerprint\blocksmith-ebf08026bff58531\test-lib-blocksmith`
 
 Caused by:
     The system cannot find the file specified. (os error 2)
@@ -54,8 +54,8 @@ Stack backtrace:
   18: git_midx_writer_dump
   19: BaseThreadInitThunk
   20: RtlUserThreadStart
-   0.479435300s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="blocksmith"}: cargo::core::compiler::fingerprint: fingerprint error for blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend)/Check { test: false }/TargetInner { name: "blocksmith", doc: true, ..: with_path("C:\\Users\\jainn\\OneDrive\\Documents\\Desktop\\Everything\\Side_Projects\\BlockSmith\\BlockSmith\\backend\\src\\main.rs", Edition2021) }
-   0.479460900s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="blocksmith"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend\target\debug\.fingerprint\blocksmith-cac3b8d103e3bef7\bin-blocksmith`
+   0.518407800s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="blocksmith"}: cargo::core::compiler::fingerprint: fingerprint error for blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend)/Check { test: false }/TargetInner { name: "blocksmith", doc: true, ..: with_path("C:\\Users\\jainn\\OneDrive\\Documents\\Desktop\\Everything\\Side_Projects\\BlockSmith\\BlockSmith\\backend\\src\\main.rs", Edition2021) }
+   0.518440000s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="blocksmith"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend\target\debug\.fingerprint\blocksmith-cac3b8d103e3bef7\bin-blocksmith`
 
 Caused by:
     The system cannot find the file specified. (os error 2)
@@ -82,8 +82,8 @@ Stack backtrace:
   18: git_midx_writer_dump
   19: BaseThreadInitThunk
   20: RtlUserThreadStart
-   0.480777500s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="blocksmith"}: cargo::core::compiler::fingerprint: fingerprint error for blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend)/Check { test: true }/TargetInner { name: "blocksmith", doc: true, ..: with_path("C:\\Users\\jainn\\OneDrive\\Documents\\Desktop\\Everything\\Side_Projects\\BlockSmith\\BlockSmith\\backend\\src\\main.rs", Edition2021) }
-   0.480798100s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="blocksmith"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend\target\debug\.fingerprint\blocksmith-9a09f1c2dabba4cb\test-bin-blocksmith`
+   0.519959800s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="blocksmith"}: cargo::core::compiler::fingerprint: fingerprint error for blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend)/Check { test: true }/TargetInner { name: "blocksmith", doc: true, ..: with_path("C:\\Users\\jainn\\OneDrive\\Documents\\Desktop\\Everything\\Side_Projects\\BlockSmith\\BlockSmith\\backend\\src\\main.rs", Edition2021) }
+   0.519980600s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="blocksmith"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend\target\debug\.fingerprint\blocksmith-9a09f1c2dabba4cb\test-bin-blocksmith`
 
 Caused by:
     The system cannot find the file specified. (os error 2)
@@ -110,8 +110,8 @@ Stack backtrace:
   18: git_midx_writer_dump
   19: BaseThreadInitThunk
   20: RtlUserThreadStart
-   0.481983700s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="oauth_listener"}: cargo::core::compiler::fingerprint: fingerprint error for blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend)/Check { test: false }/TargetInner { name: "oauth_listener", doc: true, ..: with_path("C:\\Users\\jainn\\OneDrive\\Documents\\Desktop\\Everything\\Side_Projects\\BlockSmith\\BlockSmith\\backend\\src\\bin\\oauth_listener.rs", Edition2021) }
-   0.482001100s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="oauth_listener"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend\target\debug\.fingerprint\blocksmith-7a2484827bc27c9e\bin-oauth_listener`
+   0.521151900s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="oauth_listener"}: cargo::core::compiler::fingerprint: fingerprint error for blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend)/Check { test: false }/TargetInner { name: "oauth_listener", doc: true, ..: with_path("C:\\Users\\jainn\\OneDrive\\Documents\\Desktop\\Everything\\Side_Projects\\BlockSmith\\BlockSmith\\backend\\src\\bin\\oauth_listener.rs", Edition2021) }
+   0.521163500s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="oauth_listener"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend\target\debug\.fingerprint\blocksmith-7a2484827bc27c9e\bin-oauth_listener`
 
 Caused by:
     The system cannot find the file specified. (os error 2)
@@ -138,8 +138,8 @@ Stack backtrace:
   18: git_midx_writer_dump
   19: BaseThreadInitThunk
   20: RtlUserThreadStart
-   0.483135400s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="oauth_listener"}: cargo::core::compiler::fingerprint: fingerprint error for blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend)/Check { test: true }/TargetInner { name: "oauth_listener", doc: true, ..: with_path("C:\\Users\\jainn\\OneDrive\\Documents\\Desktop\\Everything\\Side_Projects\\BlockSmith\\BlockSmith\\backend\\src\\bin\\oauth_listener.rs", Edition2021) }
-   0.483152500s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="oauth_listener"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend\target\debug\.fingerprint\blocksmith-1f3d8adb740270b8\test-bin-oauth_listener`
+   0.522401500s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="oauth_listener"}: cargo::core::compiler::fingerprint: fingerprint error for blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend)/Check { test: true }/TargetInner { name: "oauth_listener", doc: true, ..: with_path("C:\\Users\\jainn\\OneDrive\\Documents\\Desktop\\Everything\\Side_Projects\\BlockSmith\\BlockSmith\\backend\\src\\bin\\oauth_listener.rs", Edition2021) }
+   0.522420200s  INFO prepare_target{force=false package_id=blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend) target="oauth_listener"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend\target\debug\.fingerprint\blocksmith-1f3d8adb740270b8\test-bin-oauth_listener`
 
 Caused by:
     The system cannot find the file specified. (os error 2)
@@ -167,6 +167,6 @@ Stack backtrace:
   19: BaseThreadInitThunk
   20: RtlUserThreadStart
     Checking blocksmith v0.1.0 (C:\Users\jainn\OneDrive\Documents\Desktop\Everything\Side_Projects\BlockSmith\BlockSmith\backend)
-error: could not compile `blocksmith` (lib test) due to 1 previous error
-warning: build failed, waiting for other jobs to finish...
 error: could not compile `blocksmith` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `blocksmith` (lib test) due to 1 previous error
