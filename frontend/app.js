@@ -57,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error(e);
     }
   }
+// adding chat messages
 
   function addChatMessage(sender, text) {
     const div = document.createElement('div');
