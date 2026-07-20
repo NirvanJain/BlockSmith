@@ -10,4 +10,4 @@ pub async fn auth_middleware(
     next: Next,
 ) -> Response {
     next.run(request).await
-}
+}  
