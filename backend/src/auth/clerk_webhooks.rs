@@ -4,10 +4,11 @@ use axum::{
 };
 use serde::Deserialize;
 use serde_json::Value;
-use sqlx::{Pool, Postgres};
+use std::sync::Arc;
 use svix::webhooks::Webhook;
 
-use crate::database::{self, db::DbPool};
+use crate::AppState;
+use crate::database;
 
 #[derive(Debug, Deserialize)]
 pub struct ClerkWebhookEvent {
@@ -17,7 +18,7 @@ pub struct ClerkWebhookEvent {
 }
 
 pub async fn handle_clerk_webhook(
-    State(pool): State<Pool<Postgres>>,
+    State(state): State<Arc<AppState>>,
     headers: HeaderMap,
     body: String,
 ) -> Result<StatusCode, (StatusCode, String)> {
@@ -93,7 +94,6 @@ pub async fn handle_clerk_webhook(
                 }
             }
 
-            // Upsert user via database module
             let email_opt = if email.is_empty() { None } else { Some(email) };
             let name_opt = if full_name.is_empty() {
                 None
@@ -106,7 +106,7 @@ pub async fn handle_clerk_webhook(
                 Some(avatar_url)
             };
 
-            let user = database::users::upsert_from_clerk(&pool, user_id, email_opt, name_opt, avatar_opt)
+            let user = database::users::upsert_from_clerk(&state.pool, user_id, email_opt, name_opt, avatar_opt)
                 .await
                 .map_err(|e| {
                     (
@@ -115,14 +115,13 @@ pub async fn handle_clerk_webhook(
                     )
                 })?;
 
-            // If GitHub username was found, update it separately
             if let Some(ref gh_user) = github_username {
                 sqlx::query(
                     "UPDATE users SET github_username = $2 WHERE clerk_user_id = $1",
                 )
                 .bind(user_id)
                 .bind(gh_user)
-                .execute(&pool)
+                .execute(&state.pool)
                 .await
                 .map_err(|e| {
                     (
@@ -133,7 +132,6 @@ pub async fn handle_clerk_webhook(
             }
 
             if event.event_type == "user.created" {
-                // Create default profile
                 sqlx::query(
                     "INSERT INTO profiles (user_id, bio, company)
                      VALUES ($1, $2, $3)
@@ -142,7 +140,7 @@ pub async fn handle_clerk_webhook(
                 .bind(user.id)
                 .bind("OpenSource Contributor")
                 .bind("")
-                .execute(&pool)
+                .execute(&state.pool)
                 .await
                 .map_err(|e| {
                     (
@@ -151,14 +149,13 @@ pub async fn handle_clerk_webhook(
                     )
                 })?;
 
-                // Initialize contribution stats
                 sqlx::query(
                     "INSERT INTO contribution_stats (user_id)
                      VALUES ($1)
                      ON CONFLICT (user_id) DO NOTHING",
                 )
                 .bind(user.id)
-                .execute(&pool)
+                .execute(&state.pool)
                 .await
                 .map_err(|e| {
                     (
@@ -174,7 +171,7 @@ pub async fn handle_clerk_webhook(
                 "Missing user id in webhook data".to_string(),
             ))?;
 
-            database::users::delete(&pool, user_id).await.map_err(|e| {
+            database::users::delete(&state.pool, user_id).await.map_err(|e| {
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     format!("Database error deleting user: {}", e),

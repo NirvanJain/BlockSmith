@@ -1,3 +1,5 @@
+use sqlx::Row;
+
 use super::db::DbPool;
 use super::models::LeaderboardEntry;
 

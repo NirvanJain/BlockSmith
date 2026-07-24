@@ -12,4 +12,3 @@ pub mod queue_service;
 pub mod reputation_service;
 pub mod repository_service;
 pub mod verification_service;
-pub mod webhook_service;

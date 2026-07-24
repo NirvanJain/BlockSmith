@@ -1,4 +1,3 @@
-use sqlx::Row;
 use uuid::Uuid;
 
 use super::db::DbPool;

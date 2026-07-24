@@ -1,3 +1,8 @@
+use std::sync::Arc;
+
+use database::db::DbPool;
+use realtime::websockets::WsState;
+
 pub mod auth;
 pub mod blockchain;
 pub mod cache;
@@ -12,3 +17,8 @@ pub mod models;
 pub mod realtime;
 pub mod services;
 pub mod utils;
+
+pub struct AppState {
+    pub pool: DbPool,
+    pub ws_state: Arc<WsState>,
+}

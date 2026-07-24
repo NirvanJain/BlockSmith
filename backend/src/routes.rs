@@ -5,19 +5,19 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use sqlx::{Pool, Postgres};
 use std::sync::Arc;
 use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::database::{self, db::DbPool};
-use crate::realtime::websockets::{websocket_handler, WsState};
+use crate::AppState;
+use blocksmith::database::{self, db::DbPool};
+use blocksmith::realtime::websockets::websocket_handler;
 
-pub fn create_routes(ws_state: Arc<WsState>) -> Router<Pool<Postgres>> {
+pub fn create_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/health", get(health_check))
-        .route("/api/v1/webhooks/clerk", post(crate::auth::clerk_webhooks::handle_clerk_webhook))
-        .route("/api/v1/webhooks/github", post(crate::github::webhooks::github_webhook_handler))
+        .route("/api/v1/webhooks/clerk", post(blocksmith::auth::clerk_webhooks::handle_clerk_webhook))
+        .route("/api/v1/webhooks/github", post(blocksmith::github::webhooks::github_webhook_handler))
         .route("/api/v1/feed", get(get_feed))
         .route("/api/v1/leaderboard", get(get_leaderboard))
         .route("/api/v1/profile/:username", get(get_profile))
@@ -25,7 +25,7 @@ pub fn create_routes(ws_state: Arc<WsState>) -> Router<Pool<Postgres>> {
         .route("/api/v1/chat/conversations", get(get_conversations).post(create_conversation))
         .route("/api/v1/chat/conversations/:id/messages", get(get_messages))
         .route("/api/v1/me", get(get_me))
-        .route("/ws", get(websocket_handler).with_state(ws_state))
+        .route("/ws", get(websocket_handler))
 }
 
 async fn health_check() -> &'static str {
@@ -49,7 +49,7 @@ async fn authenticate_user(
     }
 
     let token = &auth_header[7..];
-    let claims = crate::auth::jwt::verify_jwt(token)
+    let claims = blocksmith::auth::jwt::verify_jwt(token)
         .await
         .map_err(|e| (StatusCode::UNAUTHORIZED, format!("Invalid token: {}", e)))?;
 
@@ -62,28 +62,24 @@ async fn authenticate_user(
 
 async fn get_me(
     headers: axum::http::HeaderMap,
-    State(pool): State<Pool<Postgres>>,
+    State(state): State<Arc<AppState>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let user_id = authenticate_user(&headers, &pool).await?;
+    let user_id = authenticate_user(&headers, &state.pool).await?;
 
-    let user = database::users::find_by_clerk_id(
-        &pool,
-        &crate::auth::jwt::verify_jwt(
-            &headers
-                .get("authorization")
-                .and_then(|v| v.to_str().ok())
-                .unwrap_or("Bearer ")
-                .trim_start_matches("Bearer "),
-        )
+    let auth_header = headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("Bearer ");
+    let token = auth_header.trim_start_matches("Bearer ");
+    let claims = blocksmith::auth::jwt::verify_jwt(token)
         .await
-        .map_err(|e| (StatusCode::UNAUTHORIZED, e.to_string()))?
-        .sub
-        .as_str(),
-    )
-    .await
-    .ok_or((StatusCode::NOT_FOUND, "User not found".to_string()))?;
+        .map_err(|e| (StatusCode::UNAUTHORIZED, e.to_string()))?;
 
-    let profile = database::profiles::get(&pool, user_id).await;
+    let user = database::users::find_by_clerk_id(&state.pool, &claims.sub)
+        .await
+        .ok_or((StatusCode::NOT_FOUND, "User not found".to_string()))?;
+
+    let profile = database::profiles::get(&state.pool, user_id).await;
 
     Ok(Json(serde_json::json!({
         "id": user.id,
@@ -108,9 +104,9 @@ async fn get_me(
 }
 
 async fn get_feed(
-    State(pool): State<Pool<Postgres>>,
+    State(state): State<Arc<AppState>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let feed = database::activities::get_feed(&pool, 50).await;
+    let feed = database::activities::get_feed(&state.pool, 50).await;
 
     if feed.is_empty() {
         return Ok(Json(serde_json::json!([
@@ -170,9 +166,9 @@ async fn get_feed(
 }
 
 async fn get_leaderboard(
-    State(pool): State<Pool<Postgres>>,
+    State(state): State<Arc<AppState>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let leaderboard = database::leaderboard::get_top(&pool, 100).await;
+    let leaderboard = database::leaderboard::get_top(&state.pool, 100).await;
 
     if leaderboard.is_empty() {
         return Ok(Json(serde_json::json!([
@@ -220,9 +216,9 @@ async fn get_leaderboard(
 
 async fn get_profile(
     Path(username): Path<String>,
-    State(pool): State<Pool<Postgres>>,
+    State(state): State<Arc<AppState>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let user = database::users::find_by_github_username(&pool, &username).await;
+    let user = database::users::find_by_github_username(&state.pool, &username).await;
 
     let user = match user {
         Some(u) => u,
@@ -266,9 +262,9 @@ async fn get_profile(
         }
     };
 
-    let profile = database::profiles::get(&pool, user.id).await;
-    let badges = database::badges::get_user_badges(&pool, user.id).await;
-    let activities = database::activities::get_user_activities(&pool, user.id, 10).await;
+    let profile = database::profiles::get(&state.pool, user.id).await;
+    let badges = database::badges::get_user_badges(&state.pool, user.id).await;
+    let activities = database::activities::get_user_activities(&state.pool, user.id, 10).await;
 
     Ok(Json(serde_json::json!({
         "user": {
@@ -305,9 +301,9 @@ async fn get_profile(
 }
 
 async fn get_discovery(
-    State(pool): State<Pool<Postgres>>,
+    State(state): State<Arc<AppState>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let issues = database::issues::get_discovery(&pool, 50).await;
+    let issues = database::issues::get_discovery(&state.pool, 50).await;
 
     if issues.is_empty() {
         return Ok(Json(serde_json::json!([
@@ -372,10 +368,10 @@ async fn get_discovery(
 
 async fn get_conversations(
     headers: axum::http::HeaderMap,
-    State(pool): State<Pool<Postgres>>,
+    State(state): State<Arc<AppState>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let user_id = authenticate_user(&headers, &pool).await?;
-    let conversations = database::conversations::get_user_conversations(&pool, user_id).await;
+    let user_id = authenticate_user(&headers, &state.pool).await?;
+    let conversations = database::conversations::get_user_conversations(&state.pool, user_id).await;
 
     let list: Vec<serde_json::Value> = conversations
         .into_iter()
@@ -407,27 +403,27 @@ struct CreateConvRequest {
 
 async fn create_conversation(
     headers: axum::http::HeaderMap,
-    State(pool): State<Pool<Postgres>>,
+    State(state): State<Arc<AppState>>,
     Json(req): Json<CreateConvRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let sender_id = authenticate_user(&headers, &pool).await?;
+    let sender_id = authenticate_user(&headers, &state.pool).await?;
 
-    let recipient = database::users::find_by_github_username(&pool, &req.recipient_username)
+    let recipient = database::users::find_by_github_username(&state.pool, &req.recipient_username)
         .await
         .ok_or((StatusCode::NOT_FOUND, "Recipient not found".to_string()))?;
 
-    if let Some(existing) = database::conversations::find_existing_dm(&pool, sender_id, recipient.id).await {
+    if let Some(existing) = database::conversations::find_existing_dm(&state.pool, sender_id, recipient.id).await {
         return Ok(Json(serde_json::json!({ "id": existing.id })));
     }
 
-    let convo = database::conversations::create(&pool)
+    let convo = database::conversations::create(&state.pool)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    database::conversations::add_participant(&pool, convo.id, sender_id)
+    database::conversations::add_participant(&state.pool, convo.id, sender_id)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    database::conversations::add_participant(&pool, convo.id, recipient.id)
+    database::conversations::add_participant(&state.pool, convo.id, recipient.id)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
@@ -437,10 +433,10 @@ async fn create_conversation(
 async fn get_messages(
     Path(conv_id): Path<Uuid>,
     headers: axum::http::HeaderMap,
-    State(pool): State<Pool<Postgres>>,
+    State(state): State<Arc<AppState>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let _user_id = authenticate_user(&headers, &pool).await?;
-    let messages = database::messages::get_messages(&pool, conv_id).await;
+    let _user_id = authenticate_user(&headers, &state.pool).await?;
+    let messages = database::messages::get_messages(&state.pool, conv_id).await;
 
     let list: Vec<serde_json::Value> = messages
         .into_iter()

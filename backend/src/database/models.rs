@@ -418,6 +418,7 @@ pub struct DiscoveryItem {
     pub creator_username: String,
     pub ai_complexity_score: Option<i32>,
     pub ai_match_score: Option<i32>,
+    pub ai_analysis: Option<String>,
     pub repository_name: String,
     pub repository_owner: String,
     pub created_at: DateTime<Utc>,

@@ -4,9 +4,10 @@ use axum::{
 };
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
-use sqlx::{Pool, Postgres};
+use std::sync::Arc;
 
-use crate::database::{self, db::DbPool};
+use crate::AppState;
+use crate::database;
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -29,7 +30,7 @@ fn verify_github_signature(secret: &str, signature: &str, body: &[u8]) -> bool {
 }
 
 pub async fn github_webhook_handler(
-    State(pool): State<Pool<Postgres>>,
+    State(state): State<Arc<AppState>>,
     headers: HeaderMap,
     body: String,
 ) -> Result<StatusCode, (StatusCode, String)> {
@@ -102,13 +103,11 @@ pub async fn github_webhook_handler(
                     .and_then(|v| v.as_i64())
                     .unwrap_or(0);
 
-                // Find user via database module
-                let user = match database::users::find_by_github_username(&pool, username).await {
+                let user = match database::users::find_by_github_username(&state.pool, username).await {
                     Some(u) => u,
                     None => return Err((StatusCode::NOT_FOUND, "User not found".to_string())),
                 };
 
-                // Upsert repository
                 let repo_uuid = sqlx::query_scalar::<_, uuid::Uuid>(
                     "INSERT INTO repositories (github_id, name, owner)
                      VALUES ($1, $2, $3)
@@ -118,16 +117,15 @@ pub async fn github_webhook_handler(
                 .bind(github_repo_id)
                 .bind(repo_name)
                 .bind(repo_owner)
-                .fetch_one(&pool)
+                .fetch_one(&state.pool)
                 .await
                 .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
                 let xp_earned = 10;
                 let activity_title = format!("Merged PR #{} in {}/{}", pr_num, repo_owner, repo_name);
 
-                // Create activity via database module
                 database::activities::create(
-                    &pool,
+                    &state.pool,
                     user.id,
                     "pr_merged",
                     Some(repo_uuid),
@@ -140,16 +138,14 @@ pub async fn github_webhook_handler(
                 .await
                 .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-                // Update user reputation via database module
                 let new_xp = user.xp + xp_earned;
                 let new_level = (new_xp / 100) + 1;
                 let new_reputation = user.reputation_score + xp_earned;
 
-                database::users::update_reputation(&pool, user.id, new_xp, new_reputation, new_level)
+                database::users::update_reputation(&state.pool, user.id, new_xp, new_reputation, new_level)
                     .await
                     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-                // Update contribution stats
                 sqlx::query(
                     "INSERT INTO contribution_stats (user_id, prs_merged)
                      VALUES ($1, 1)
@@ -157,11 +153,10 @@ pub async fn github_webhook_handler(
                      SET prs_merged = contribution_stats.prs_merged + 1",
                 )
                 .bind(user.id)
-                .execute(&pool)
+                .execute(&state.pool)
                 .await
                 .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-                // Record reputation history
                 sqlx::query(
                     "INSERT INTO reputation_history (user_id, amount, reason)
                      VALUES ($1, $2, $3)",
@@ -169,7 +164,7 @@ pub async fn github_webhook_handler(
                 .bind(user.id)
                 .bind(xp_earned)
                 .bind(format!("Merged PR: {}", pr_title))
-                .execute(&pool)
+                .execute(&state.pool)
                 .await
                 .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
             }

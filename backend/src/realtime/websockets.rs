@@ -8,11 +8,11 @@ use axum::{
 };
 use futures_util::{SinkExt, StreamExt};
 use serde::Deserialize;
-use sqlx::{Pool, Postgres};
 use std::sync::Arc;
 use tokio::sync::broadcast;
 
-use crate::database::{self, db::DbPool};
+use crate::AppState;
+use crate::database;
 
 pub struct WsState {
     pub feed_tx: broadcast::Sender<String>,
@@ -33,20 +33,18 @@ pub struct WsParams {
 pub async fn websocket_handler(
     ws: WebSocketUpgrade,
     Query(params): Query<WsParams>,
-    State(pool): State<Pool<Postgres>>,
-    State(ws_state): State<Arc<WsState>>,
+    State(state): State<Arc<AppState>>,
 ) -> impl IntoResponse {
     match crate::auth::jwt::verify_jwt(&params.token).await {
-        Ok(claims) => ws.on_upgrade(move |socket| handle_socket(socket, claims.sub, pool, ws_state)),
+        Ok(claims) => ws.on_upgrade(move |socket| handle_socket(socket, claims.sub, state)),
         Err(e) => (StatusCode::UNAUTHORIZED, format!("Unauthorized: {}", e)).into_response(),
     }
 }
 
-async fn handle_socket(socket: WebSocket, clerk_user_id: String, pool: Pool<Postgres>, ws_state: Arc<WsState>) {
+async fn handle_socket(socket: WebSocket, clerk_user_id: String, state: Arc<AppState>) {
     let (mut sender, mut receiver) = socket.split();
-    let mut feed_rx = ws_state.feed_tx.subscribe();
+    let mut feed_rx = state.ws_state.feed_tx.subscribe();
 
-    let _clerk_id_clone = clerk_user_id.clone();
     let mut send_task = tokio::spawn(async move {
         loop {
             tokio::select! {
@@ -59,7 +57,7 @@ async fn handle_socket(socket: WebSocket, clerk_user_id: String, pool: Pool<Post
         }
     });
 
-    let pool_clone = pool.clone();
+    let pool = state.pool.clone();
     let clerk_id_for_recv = clerk_user_id.clone();
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(message)) = receiver.next().await {
@@ -78,13 +76,11 @@ async fn handle_socket(socket: WebSocket, clerk_user_id: String, pool: Pool<Post
                                 chat_payload.get("content").and_then(|v| v.as_str())
                             {
                                 if let Ok(conv_uuid) = uuid::Uuid::parse_str(conv_id_str) {
-                                    // Find sender via database module
                                     if let Some(sender_user) =
-                                        database::users::find_by_clerk_id(&pool_clone, &clerk_id_for_recv).await
+                                        database::users::find_by_clerk_id(&pool, &clerk_id_for_recv).await
                                     {
-                                        // Create message via database module
                                         let _ = database::messages::create(
-                                            &pool_clone,
+                                            &pool,
                                             conv_uuid,
                                             sender_user.id,
                                             content,
