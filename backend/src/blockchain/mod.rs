@@ -1,5 +1,5 @@
 pub mod block;
-pub mod blockchain;
+pub mod chain;
 pub mod chain_stats;
 pub mod consensus;
 pub mod difficulty;

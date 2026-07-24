@@ -49,7 +49,7 @@ async fn handle_socket(socket: WebSocket, clerk_user_id: String, state: Arc<AppS
         loop {
             tokio::select! {
                 Ok(msg_text) = feed_rx.recv() => {
-                    if sender.send(Message::Text(msg_text.into())).await.is_err() {
+                    if sender.send(Message::Text(msg_text)).await.is_err() {
                         break;
                     }
                 }

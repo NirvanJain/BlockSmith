@@ -6,6 +6,12 @@ pub struct CacheService {
     pub cache: MemoryCache,
 }
 
+impl Default for CacheService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CacheService {
     pub fn new() -> Self {
         Self {

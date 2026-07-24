@@ -9,6 +9,12 @@ pub struct Blockchain {
     pub chain: Vec<Block>,
 }
 
+impl Default for Blockchain {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Blockchain {
     pub fn new() -> Self {
         let genesis_block = Block {

@@ -6,6 +6,12 @@ pub struct BroadcastManager {
         broadcast::Sender<String>,
 }
 
+impl Default for BroadcastManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BroadcastManager {
     pub fn new() -> Self {
         let (sender, _) =

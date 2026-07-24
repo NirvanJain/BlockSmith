@@ -9,6 +9,12 @@ pub struct PresenceManager {
         Arc<Mutex<HashSet<String>>>,
 }
 
+impl Default for PresenceManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PresenceManager {
     pub fn new() -> Self {
         Self {

@@ -9,6 +9,12 @@ pub struct QueueService {
         Arc<Mutex<VecDeque<String>>>,
 }
 
+impl Default for QueueService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl QueueService {
     pub fn new() -> Self {
         Self {

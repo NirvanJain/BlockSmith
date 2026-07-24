@@ -1,6 +1,6 @@
 use crate::blockchain::{
     block::Block,
-    blockchain::Blockchain,
+    chain::Blockchain,
 };
 
 pub fn find_block_by_hash(

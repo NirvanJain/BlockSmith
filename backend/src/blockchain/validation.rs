@@ -1,5 +1,5 @@
 use crate::blockchain::{
-    blockchain::Blockchain,
+    chain::Blockchain,
     hashing::generate_hash,
 };
 

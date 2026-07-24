@@ -1,5 +1,5 @@
 use blocksmith::blockchain::{
-    blockchain::Blockchain,
+    chain::Blockchain,
     validation::validate_chain,
 };
 

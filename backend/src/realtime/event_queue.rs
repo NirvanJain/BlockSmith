@@ -9,6 +9,12 @@ pub struct EventQueue {
         Arc<Mutex<VecDeque<String>>>,
 }
 
+impl Default for EventQueue {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EventQueue {
     pub fn new() -> Self {
         Self {
@@ -46,5 +52,9 @@ impl EventQueue {
             self.queue.lock().unwrap();
 
         queue.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }

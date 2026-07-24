@@ -1,4 +1,4 @@
-use blocksmith::blockchain::blockchain::Blockchain;
+use blocksmith::blockchain::chain::Blockchain;
 
 #[test]
 fn test_heavy_blockchain_load() {

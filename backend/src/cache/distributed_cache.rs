@@ -1,5 +1,11 @@
 pub struct DistributedCache;
 
+impl Default for DistributedCache {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DistributedCache {
     pub fn new() -> Self {
         Self

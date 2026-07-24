@@ -18,7 +18,9 @@ pub struct Claims {
 #[derive(Debug, Deserialize, Clone)]
 struct Jwk {
     kid: String,
+    #[allow(dead_code)]
     kty: String,
+    #[allow(dead_code)]
     alg: String,
     n: String,
     e: String,

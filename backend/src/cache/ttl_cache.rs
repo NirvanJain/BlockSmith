@@ -16,6 +16,12 @@ pub struct TtlCache {
     >,
 }
 
+impl Default for TtlCache {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TtlCache {
     pub fn new() -> Self {
         Self {

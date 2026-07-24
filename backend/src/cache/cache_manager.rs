@@ -5,6 +5,12 @@ pub struct CacheManager {
     pub github_cache: MemoryCache,
 }
 
+impl Default for CacheManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CacheManager {
     pub fn new() -> Self {
         Self {

@@ -4,6 +4,12 @@ pub struct CacheMonitor {
     pub total_misses: usize,
 }
 
+impl Default for CacheMonitor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CacheMonitor {
     pub fn new() -> Self {
         Self {

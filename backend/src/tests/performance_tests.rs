@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use blocksmith::blockchain::blockchain::Blockchain;
+use blocksmith::blockchain::chain::Blockchain;
 
 #[test]
 fn test_block_creation_performance() {

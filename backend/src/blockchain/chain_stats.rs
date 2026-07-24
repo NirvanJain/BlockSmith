@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::blockchain::blockchain::Blockchain;
+use crate::blockchain::chain::Blockchain;
 
 pub struct ChainStats {
     pub total_blocks: usize,

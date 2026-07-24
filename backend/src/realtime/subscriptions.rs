@@ -15,6 +15,12 @@ pub struct SubscriptionManager {
     >,
 }
 
+impl Default for SubscriptionManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SubscriptionManager {
     pub fn new() -> Self {
         Self {
@@ -39,7 +45,7 @@ impl SubscriptionManager {
 
         subscriptions
             .entry(username)
-            .or_insert(Vec::new())
+            .or_default()
             .push(topic);
     }
 
