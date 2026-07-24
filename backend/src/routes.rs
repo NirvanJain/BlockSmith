@@ -8,6 +8,9 @@ use axum::{
 use sqlx::{Pool, Postgres};
 use std::sync::Arc;
 use serde::Deserialize;
+use uuid::Uuid;
+
+use crate::database::{self, db::DbPool};
 use crate::realtime::websockets::{websocket_handler, WsState};
 
 pub fn create_routes(ws_state: Arc<WsState>) -> Router<Pool<Postgres>> {
@@ -31,30 +34,30 @@ async fn health_check() -> &'static str {
 
 async fn authenticate_user(
     headers: &axum::http::HeaderMap,
-    pool: &Pool<Postgres>,
-) -> Result<uuid::Uuid, (StatusCode, String)> {
-    let auth_header = headers.get("authorization")
+    pool: &DbPool,
+) -> Result<Uuid, (StatusCode, String)> {
+    let auth_header = headers
+        .get("authorization")
         .and_then(|v| v.to_str().ok())
-        .ok_or((StatusCode::Unauthorized, "Missing Authorization header".to_string()))?;
-        
+        .ok_or((StatusCode::UNAUTHORIZED, "Missing Authorization header".to_string()))?;
+
     if !auth_header.starts_with("Bearer ") {
-        return Err((StatusCode::Unauthorized, "Invalid Authorization header format".to_string()));
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            "Invalid Authorization header format".to_string(),
+        ));
     }
-    
+
     let token = &auth_header[7..];
-    let claims = crate::auth::jwt::verify_jwt(token).await
-        .map_err(|e| (StatusCode::Unauthorized, format!("Invalid token: {}", e)))?;
-        
-    let user_id = sqlx::query_scalar!(
-        "SELECT id FROM users WHERE clerk_user_id = $1",
-        claims.sub
-    )
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| (StatusCode::InternalServerError, e.to_string()))?
-    .ok_or((StatusCode::NotFound, "User not found".to_string()))?;
-    
-    Ok(user_id)
+    let claims = crate::auth::jwt::verify_jwt(token)
+        .await
+        .map_err(|e| (StatusCode::UNAUTHORIZED, format!("Invalid token: {}", e)))?;
+
+    let user = database::users::find_by_clerk_id(pool, &claims.sub)
+        .await
+        .ok_or((StatusCode::NOT_FOUND, "User not found".to_string()))?;
+
+    Ok(user.id)
 }
 
 async fn get_me(
@@ -62,18 +65,25 @@ async fn get_me(
     State(pool): State<Pool<Postgres>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
     let user_id = authenticate_user(&headers, &pool).await?;
-    let user = sqlx::query(
-        r#"
-        SELECT u.*, p.bio, p.company, p.location, p.website, p.skills, p.interests
-        FROM users u
-        LEFT JOIN profiles p ON p.user_id = u.id
-        WHERE u.id = $1
-        "#,
-        user_id
+
+    let user = database::users::find_by_clerk_id(
+        &pool,
+        &crate::auth::jwt::verify_jwt(
+            &headers
+                .get("authorization")
+                .and_then(|v| v.to_str().ok())
+                .unwrap_or("Bearer ")
+                .trim_start_matches("Bearer "),
+        )
+        .await
+        .map_err(|e| (StatusCode::UNAUTHORIZED, e.to_string()))?
+        .sub
+        .as_str(),
     )
-    .fetch_one(&pool)
     .await
-    .map_err(|e| (StatusCode::InternalServerError, e.to_string()))?;
+    .ok_or((StatusCode::NOT_FOUND, "User not found".to_string()))?;
+
+    let profile = database::profiles::get(&pool, user_id).await;
 
     Ok(Json(serde_json::json!({
         "id": user.id,
@@ -88,39 +98,25 @@ async fn get_me(
         "total_contributions": user.total_contributions,
         "xp": user.xp,
         "level": user.level,
-        "bio": user.bio,
-        "company": user.company,
-        "location": user.location,
-        "website": user.website,
-        "skills": user.skills.unwrap_or_default(),
-        "interests": user.interests.unwrap_or_default(),
+        "bio": profile.as_ref().and_then(|p| p.bio.clone()).unwrap_or_default(),
+        "company": profile.as_ref().and_then(|p| p.company.clone()).unwrap_or_default(),
+        "location": profile.as_ref().and_then(|p| p.location.clone()).unwrap_or_default(),
+        "website": profile.as_ref().and_then(|p| p.website.clone()).unwrap_or_default(),
+        "skills": profile.as_ref().map(|p| p.skills.clone()).unwrap_or_default(),
+        "interests": profile.as_ref().map(|p| p.interests.clone()).unwrap_or_default(),
     })))
 }
 
 async fn get_feed(
     State(pool): State<Pool<Postgres>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let activities = sqlx::query(
-        r#"
-        SELECT a.*, u.name as actor_name, u.avatar_url as actor_avatar, u.github_username as actor_github
-        FROM activities a
-        JOIN users u ON a.user_id = u.id
-        ORDER BY a.created_at DESC
-        LIMIT 50
-        "#
-    )
-    .fetch_all(&pool)
-    .await
-    .map_err(|e| (StatusCode::InternalServerError, e.to_string()))?;
+    let feed = database::activities::get_feed(&pool, 50).await;
 
-    // If feed is empty, let's return some mock feed activities for first run/demo
-    if activities.is_empty() {
+    if feed.is_empty() {
         return Ok(Json(serde_json::json!([
             {
                 "id": "act_1",
-                "user_id": "user_mock",
                 "activity_type": "pr_merged",
-                "repository_id": null,
                 "title": "Merged PR #21 in axum-rs/axum",
                 "description": "feat: Add high performance WebSocket channels",
                 "link": "https://github.com/tokio-rs/axum",
@@ -134,9 +130,7 @@ async fn get_feed(
             },
             {
                 "id": "act_2",
-                "user_id": "user_mock",
                 "activity_type": "badge_awarded",
-                "repository_id": null,
                 "title": "Unlocked 'Contributor' Badge",
                 "description": "Earned 100 XP from verifiable contributions",
                 "link": "",
@@ -151,25 +145,26 @@ async fn get_feed(
         ])));
     }
 
-    let list: Vec<serde_json::Value> = activities.into_iter().map(|a| {
-        serde_json::json!({
-            "id": a.id,
-            "user_id": a.user_id,
-            "activity_type": a.activity_type,
-            "repository_id": a.repository_id,
-            "title": a.title,
-            "description": a.description,
-            "link": a.link,
-            "metadata": a.metadata.unwrap_or_default(),
-            "xp_earned": a.xp_earned,
-            "created_at": a.created_at,
-            "actor": {
-                "name": a.actor_name,
-                "avatar_url": a.actor_avatar,
-                "github_username": a.actor_github,
-            }
+    let list: Vec<serde_json::Value> = feed
+        .into_iter()
+        .map(|item| {
+            serde_json::json!({
+                "id": item.id,
+                "activity_type": item.activity_type,
+                "title": item.title,
+                "description": item.description,
+                "link": item.link,
+                "xp_earned": item.xp_earned,
+                "created_at": item.created_at,
+                "repository": item.repository,
+                "actor": {
+                    "name": item.author_name,
+                    "avatar_url": item.author_avatar,
+                    "github_username": item.author_username,
+                }
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(Json(serde_json::json!(list)))
 }
@@ -177,19 +172,9 @@ async fn get_feed(
 async fn get_leaderboard(
     State(pool): State<Pool<Postgres>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let users = sqlx::query(
-        r#"
-        SELECT id, name, github_username, avatar_url, reputation_score, xp, level
-        FROM users
-        ORDER BY reputation_score DESC
-        LIMIT 100
-        "#
-    )
-    .fetch_all(&pool)
-    .await
-    .map_err(|e| (StatusCode::InternalServerError, e.to_string()))?;
+    let leaderboard = database::leaderboard::get_top(&pool, 100).await;
 
-    if users.is_empty() {
+    if leaderboard.is_empty() {
         return Ok(Json(serde_json::json!([
             {
                 "rank": 1,
@@ -214,18 +199,21 @@ async fn get_leaderboard(
         ])));
     }
 
-    let list: Vec<serde_json::Value> = users.into_iter().enumerate().map(|(idx, u)| {
-        serde_json::json!({
-            "rank": idx + 1,
-            "id": u.id,
-            "name": u.name,
-            "github_username": u.github_username,
-            "avatar_url": u.avatar_url,
-            "reputation_score": u.reputation_score,
-            "xp": u.xp,
-            "level": u.level,
+    let list: Vec<serde_json::Value> = leaderboard
+        .into_iter()
+        .map(|entry| {
+            serde_json::json!({
+                "rank": entry.rank,
+                "id": entry.user_id,
+                "name": entry.name,
+                "github_username": entry.github_username,
+                "avatar_url": entry.avatar_url,
+                "reputation_score": entry.reputation_score,
+                "xp": entry.xp,
+                "level": entry.level,
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(Json(serde_json::json!(list)))
 }
@@ -234,23 +222,11 @@ async fn get_profile(
     Path(username): Path<String>,
     State(pool): State<Pool<Postgres>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let user = sqlx::query(
-        r#"
-        SELECT u.*, p.bio, p.company, p.location, p.website, p.skills, p.interests
-        FROM users u
-        LEFT JOIN profiles p ON p.user_id = u.id
-        WHERE u.github_username = $1
-        "#,
-        username
-    )
-    .fetch_optional(&pool)
-    .await
-    .map_err(|e| (StatusCode::InternalServerError, e.to_string()))?;
+    let user = database::users::find_by_github_username(&pool, &username).await;
 
     let user = match user {
         Some(u) => u,
         None => {
-            // Return mock profile if user not registered yet to allow browsing portfolio in demo
             return Ok(Json(serde_json::json!({
                 "user": {
                     "id": uuid::Uuid::new_v4(),
@@ -260,10 +236,10 @@ async fn get_profile(
                     "reputation_score": 120,
                     "xp": 120,
                     "level": 2,
-                    "bio": "Passionate developer exploring OpenHub",
+                    "bio": "Passionate developer exploring BlockSmith",
                     "company": "OpenSource",
                     "location": "Earth",
-                    "website": "https://openhub.dev",
+                    "website": "https://blocksmith.dev",
                     "skills": ["Rust", "TypeScript", "React"],
                     "interests": ["Compilers", "Distributed Systems"],
                 },
@@ -290,31 +266,9 @@ async fn get_profile(
         }
     };
 
-    let badges = sqlx::query(
-        r#"
-        SELECT b.*
-        FROM badges b
-        JOIN user_badges ub ON ub.badge_id = b.id
-        WHERE ub.user_id = $1
-        "#,
-        user.id
-    )
-    .fetch_all(&pool)
-    .await
-    .map_err(|e| (StatusCode::InternalServerError, e.to_string()))?;
-
-    let activities = sqlx::query(
-        r#"
-        SELECT * FROM activities
-        WHERE user_id = $1
-        ORDER BY created_at DESC
-        LIMIT 10
-        "#,
-        user.id
-    )
-    .fetch_all(&pool)
-    .await
-    .map_err(|e| (StatusCode::InternalServerError, e.to_string()))?;
+    let profile = database::profiles::get(&pool, user.id).await;
+    let badges = database::badges::get_user_badges(&pool, user.id).await;
+    let activities = database::activities::get_user_activities(&pool, user.id, 10).await;
 
     Ok(Json(serde_json::json!({
         "user": {
@@ -325,12 +279,12 @@ async fn get_profile(
             "reputation_score": user.reputation_score,
             "xp": user.xp,
             "level": user.level,
-            "bio": user.bio,
-            "company": user.company,
-            "location": user.location,
-            "website": user.website,
-            "skills": user.skills.unwrap_or_default(),
-            "interests": user.interests.unwrap_or_default(),
+            "bio": profile.as_ref().and_then(|p| p.bio.clone()).unwrap_or_default(),
+            "company": profile.as_ref().and_then(|p| p.company.clone()).unwrap_or_default(),
+            "location": profile.as_ref().and_then(|p| p.location.clone()).unwrap_or_default(),
+            "website": profile.as_ref().and_then(|p| p.website.clone()).unwrap_or_default(),
+            "skills": profile.as_ref().map(|p| p.skills.clone()).unwrap_or_default(),
+            "interests": profile.as_ref().map(|p| p.interests.clone()).unwrap_or_default(),
         },
         "badges": badges.into_iter().map(|b| serde_json::json!({
             "id": b.id,
@@ -353,17 +307,7 @@ async fn get_profile(
 async fn get_discovery(
     State(pool): State<Pool<Postgres>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let issues = sqlx::query(
-        r#"
-        SELECT i.*, r.name as repo_name, r.owner as repo_owner
-        FROM issues i
-        JOIN repositories r ON i.repository_id = r.id
-        ORDER BY i.created_at DESC
-        "#
-    )
-    .fetch_all(&pool)
-    .await
-    .map_err(|e| (StatusCode::InternalServerError, e.to_string()))?;
+    let issues = database::issues::get_discovery(&pool, 50).await;
 
     if issues.is_empty() {
         return Ok(Json(serde_json::json!([
@@ -402,24 +346,26 @@ async fn get_discovery(
         ])));
     }
 
-    let list: Vec<serde_json::Value> = issues.into_iter().map(|i| {
-        serde_json::json!({
-            "id": i.id,
-            "number": i.number,
-            "title": i.title,
-            "body": i.body,
-            "state": i.state,
-            "labels": i.labels.unwrap_or_default(),
-            "creator_username": i.creator_username,
-            "repo": {
-                "name": i.repo_name,
-                "owner": i.repo_owner,
-            },
-            "ai_complexity_score": i.ai_complexity_score.unwrap_or(5),
-            "ai_match_score": i.ai_match_score.unwrap_or(75),
-            "ai_analysis": i.ai_analysis.unwrap_or_else(|| "Complexity score fits your technical skills.".to_string()),
+    let list: Vec<serde_json::Value> = issues
+        .into_iter()
+        .map(|item| {
+            serde_json::json!({
+                "id": item.issue_id,
+                "title": item.title,
+                "body": item.body,
+                "state": item.state,
+                "labels": item.labels,
+                "creator_username": item.creator_username,
+                "repo": {
+                    "name": item.repository_name,
+                    "owner": item.repository_owner,
+                },
+                "ai_complexity_score": item.ai_complexity_score.unwrap_or(5),
+                "ai_match_score": item.ai_match_score.unwrap_or(75),
+                "ai_analysis": item.ai_analysis.unwrap_or_else(|| "Complexity score fits your technical skills.".to_string()),
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(Json(serde_json::json!(list)))
 }
@@ -429,33 +375,27 @@ async fn get_conversations(
     State(pool): State<Pool<Postgres>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
     let user_id = authenticate_user(&headers, &pool).await?;
+    let conversations = database::conversations::get_user_conversations(&pool, user_id).await;
 
-    let conversations = sqlx::query(
-        r#"
-        SELECT c.*, array_agg(u.github_username) as participants
-        FROM conversations c
-        JOIN conversation_participants cp ON cp.conversation_id = c.id
-        JOIN users u ON cp.user_id = u.id
-        WHERE c.id IN (
-            SELECT conversation_id FROM conversation_participants WHERE user_id = $1
-        )
-        GROUP BY c.id
-        "#,
-        user_id
-    )
-    .fetch_all(&pool)
-    .await
-    .map_err(|e| (StatusCode::InternalServerError, e.to_string()))?;
-
-    let list: Vec<serde_json::Value> = conversations.into_iter().map(|c| {
-        serde_json::json!({
-            "id": c.id,
-            "is_group": c.is_group,
-            "name": c.name,
-            "participants": c.participants.unwrap_or_default(),
-            "created_at": c.created_at,
+    let list: Vec<serde_json::Value> = conversations
+        .into_iter()
+        .map(|c| {
+            serde_json::json!({
+                "id": c.conversation.id,
+                "is_group": c.conversation.is_group,
+                "name": c.conversation.name,
+                "participants": c.participants.into_iter().map(|p| {
+                    serde_json::json!({
+                        "user_id": p.user_id,
+                        "name": p.name,
+                        "github_username": p.github_username,
+                        "avatar_url": p.avatar_url,
+                    })
+                }).collect::<Vec<_>>(),
+                "created_at": c.conversation.created_at,
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(Json(serde_json::json!(list)))
 }
@@ -472,85 +412,49 @@ async fn create_conversation(
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
     let sender_id = authenticate_user(&headers, &pool).await?;
 
-    let recipient_id = sqlx::query_scalar!(
-        "SELECT id FROM users WHERE github_username = $1",
-        req.recipient_username
-    )
-    .fetch_optional(&pool)
-    .await
-    .map_err(|e| (StatusCode::InternalServerError, e.to_string()))?
-    .ok_or((StatusCode::NotFound, "Recipient not found".to_string()))?;
+    let recipient = database::users::find_by_github_username(&pool, &req.recipient_username)
+        .await
+        .ok_or((StatusCode::NOT_FOUND, "Recipient not found".to_string()))?;
 
-    let existing_dm = sqlx::query_scalar!(
-        r#"
-        SELECT c.id FROM conversations c
-        JOIN conversation_participants cp1 ON cp1.conversation_id = c.id
-        JOIN conversation_participants cp2 ON cp2.conversation_id = c.id
-        WHERE c.is_group = FALSE AND cp1.user_id = $1 AND cp2.user_id = $2
-        "#,
-        sender_id,
-        recipient_id
-    )
-    .fetch_optional(&pool)
-    .await
-    .map_err(|e| (StatusCode::InternalServerError, e.to_string()))?;
-
-    if let Some(dm_id) = existing_dm {
-        return Ok(Json(serde_json::json!({ "id": dm_id })));
+    if let Some(existing) = database::conversations::find_existing_dm(&pool, sender_id, recipient.id).await {
+        return Ok(Json(serde_json::json!({ "id": existing.id })));
     }
 
-    let conv_id = sqlx::query_scalar!(
-        "INSERT INTO conversations (is_group) VALUES (FALSE) RETURNING id"
-    )
-    .fetch_one(&pool)
-    .await
-    .map_err(|e| (StatusCode::InternalServerError, e.to_string()))?;
+    let convo = database::conversations::create(&pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    sqlx::query(
-        "INSERT INTO conversation_participants (conversation_id, user_id) VALUES ($1, $2), ($1, $3)",
-        conv_id,
-        sender_id,
-        recipient_id
-    )
-    .execute(&pool)
-    .await
-    .map_err(|e| (StatusCode::InternalServerError, e.to_string()))?;
+    database::conversations::add_participant(&pool, convo.id, sender_id)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    database::conversations::add_participant(&pool, convo.id, recipient.id)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    Ok(Json(serde_json::json!({ "id": conv_id })))
+    Ok(Json(serde_json::json!({ "id": convo.id })))
 }
 
 async fn get_messages(
-    Path(conv_id): Path<uuid::Uuid>,
+    Path(conv_id): Path<Uuid>,
     headers: axum::http::HeaderMap,
     State(pool): State<Pool<Postgres>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
     let _user_id = authenticate_user(&headers, &pool).await?;
+    let messages = database::messages::get_messages(&pool, conv_id).await;
 
-    let messages = sqlx::query(
-        r#"
-        SELECT m.*, u.github_username as sender_username, u.avatar_url as sender_avatar
-        FROM messages m
-        JOIN users u ON m.sender_id = u.id
-        WHERE m.conversation_id = $1
-        ORDER BY m.created_at ASC
-        "#,
-        conv_id
-    )
-    .fetch_all(&pool)
-    .await
-    .map_err(|e| (StatusCode::InternalServerError, e.to_string()))?;
-
-    let list: Vec<serde_json::Value> = messages.into_iter().map(|m| {
-        serde_json::json!({
-            "id": m.id,
-            "conversation_id": m.conversation_id,
-            "sender_id": m.sender_id,
-            "sender_username": m.sender_username,
-            "sender_avatar": m.sender_avatar,
-            "content": m.content,
-            "created_at": m.created_at,
+    let list: Vec<serde_json::Value> = messages
+        .into_iter()
+        .map(|m| {
+            serde_json::json!({
+                "id": m.id,
+                "sender_id": m.sender_id,
+                "sender_name": m.sender_name,
+                "sender_avatar": m.sender_avatar,
+                "content": m.content,
+                "created_at": m.created_at,
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(Json(serde_json::json!(list)))
 }

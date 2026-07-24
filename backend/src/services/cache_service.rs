@@ -11,7 +11,7 @@ impl CacheService {
         Self {
             cache:
                 MemoryCache::new(),
-        }
+        } 
     }
 
     pub fn set(

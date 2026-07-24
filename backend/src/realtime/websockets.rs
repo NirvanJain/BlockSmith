@@ -1,13 +1,18 @@
 use axum::{
-    extract::{ws::{Message, WebSocket, WebSocketUpgrade}, State, Query},
-    response::IntoResponse,
+    extract::{
+        ws::{Message, WebSocket, WebSocketUpgrade},
+        Query, State,
+    },
     http::StatusCode,
+    response::IntoResponse,
 };
+use futures_util::{SinkExt, StreamExt};
 use serde::Deserialize;
 use sqlx::{Pool, Postgres};
 use std::sync::Arc;
 use tokio::sync::broadcast;
-use futures_util::{StreamExt, SinkExt};
+
+use crate::database::{self, db::DbPool};
 
 pub struct WsState {
     pub feed_tx: broadcast::Sender<String>,
@@ -32,25 +37,16 @@ pub async fn websocket_handler(
     State(ws_state): State<Arc<WsState>>,
 ) -> impl IntoResponse {
     match crate::auth::jwt::verify_jwt(&params.token).await {
-        Ok(claims) => {
-            ws.on_upgrade(move |socket| handle_socket(socket, claims.sub, pool, ws_state))
-        }
-        Err(e) => {
-            (StatusCode::UNAUTHORIZED, format!("Unauthorized: {}", e)).into_response()
-        }
+        Ok(claims) => ws.on_upgrade(move |socket| handle_socket(socket, claims.sub, pool, ws_state)),
+        Err(e) => (StatusCode::UNAUTHORIZED, format!("Unauthorized: {}", e)).into_response(),
     }
 }
 
-async fn handle_socket(
-    socket: WebSocket,
-    clerk_user_id: String,
-    pool: Pool<Postgres>,
-    ws_state: Arc<WsState>,
-) {
+async fn handle_socket(socket: WebSocket, clerk_user_id: String, pool: Pool<Postgres>, ws_state: Arc<WsState>) {
     let (mut sender, mut receiver) = socket.split();
     let mut feed_rx = ws_state.feed_tx.subscribe();
-    
-    let clerk_id_clone = clerk_user_id.clone();
+
+    let _clerk_id_clone = clerk_user_id.clone();
     let mut send_task = tokio::spawn(async move {
         loop {
             tokio::select! {
@@ -64,30 +60,36 @@ async fn handle_socket(
     });
 
     let pool_clone = pool.clone();
+    let clerk_id_for_recv = clerk_user_id.clone();
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(message)) = receiver.next().await {
             match message {
                 Message::Text(text) => {
                     if text == "ping" {
-                        // ignore or respond
-                    } else if let Ok(chat_payload) = serde_json::from_str::<serde_json::Value>(&text) {
-                        if let Some(conv_id_str) = chat_payload.get("conversation_id").and_then(|v| v.as_str()) {
-                            if let Some(content) = chat_payload.get("content").and_then(|v| v.as_str()) {
+                        // ignore
+                    } else if let Ok(chat_payload) =
+                        serde_json::from_str::<serde_json::Value>(&text)
+                    {
+                        if let Some(conv_id_str) = chat_payload
+                            .get("conversation_id")
+                            .and_then(|v| v.as_str())
+                        {
+                            if let Some(content) =
+                                chat_payload.get("content").and_then(|v| v.as_str())
+                            {
                                 if let Ok(conv_uuid) = uuid::Uuid::parse_str(conv_id_str) {
-                                    if let Ok(Some(sender_uuid)) = sqlx::query_scalar::<_, uuid::Uuid>(
-                                        "SELECT id FROM users WHERE clerk_user_id = $1",
-                                    )
-                                    .bind(&clerk_id_clone)
-                                    .fetch_optional(&pool_clone)
-                                    .await {
-                                        let _ = sqlx::query(
-                                            "INSERT INTO messages (conversation_id, sender_id, content) VALUES ($1, $2, $3)"
+                                    // Find sender via database module
+                                    if let Some(sender_user) =
+                                        database::users::find_by_clerk_id(&pool_clone, &clerk_id_for_recv).await
+                                    {
+                                        // Create message via database module
+                                        let _ = database::messages::create(
+                                            &pool_clone,
+                                            conv_uuid,
+                                            sender_user.id,
+                                            content,
                                         )
-                                            .bind(conv_uuid)
-                                            .bind(sender_uuid)
-                                            .bind(content)
-                                            .execute(&pool_clone)
-                                            .await;
+                                        .await;
                                     }
                                 }
                             }
@@ -106,6 +108,6 @@ async fn handle_socket(
         _ = (&mut send_task) => recv_task.abort(),
         _ = (&mut recv_task) => send_task.abort(),
     };
-    
+
     println!("WebSocket connection closed for user: {}", clerk_user_id);
 }
