@@ -4,6 +4,7 @@ use uuid::Uuid;
 use super::db::DbPool;
 use super::models::{ActivityRow, FeedItem};
 
+#[allow(clippy::too_many_arguments)]
 pub async fn create(
     pool: &DbPool,
     user_id: Uuid,

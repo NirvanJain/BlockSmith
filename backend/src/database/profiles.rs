@@ -16,6 +16,7 @@ pub async fn get(pool: &DbPool, user_id: Uuid) -> Option<ProfileRow> {
     .flatten()
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn upsert(
     pool: &DbPool,
     user_id: Uuid,
