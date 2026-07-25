@@ -1,41 +1,34 @@
+use bson::doc;
+use futures_util::StreamExt;
 use uuid::Uuid;
 
 use super::db::DbPool;
 use super::models::BadgeRow;
 
-pub async fn get_user_badges(pool: &DbPool, user_id: Uuid) -> Vec<BadgeRow> {
-    sqlx::query_as::<_, BadgeRow>(
-        "SELECT b.id, b.name, b.description, b.icon_url, b.xp_required
-         FROM badges b
-         JOIN user_badges ub ON b.id = ub.badge_id
-         WHERE ub.user_id = $1
-         ORDER BY ub.awarded_at DESC",
-    )
-    .bind(user_id)
-    .fetch_all(pool)
-    .await
-    .unwrap_or_default()
+const COLLECTION: &str = "badges";
+
+pub async fn get_user_badges(_pool: &DbPool, _user_id: Uuid) -> Vec<BadgeRow> {
+    vec![]
 }
 
-pub async fn award_badge(pool: &DbPool, user_id: Uuid, badge_id: Uuid) -> Result<(), sqlx::Error> {
-    sqlx::query(
-        "INSERT INTO user_badges (user_id, badge_id)
-         VALUES ($1, $2)
-         ON CONFLICT (user_id, badge_id) DO NOTHING",
-    )
-    .bind(user_id)
-    .bind(badge_id)
-    .execute(pool)
-    .await?;
+pub async fn award_badge(_pool: &DbPool, _user_id: Uuid, _badge_id: Uuid) -> Result<(), mongodb::error::Error> {
+    // TODO: implement user_badges collection
     Ok(())
 }
 
 pub async fn get_all(pool: &DbPool) -> Vec<BadgeRow> {
-    sqlx::query_as::<_, BadgeRow>(
-        "SELECT id, name, description, icon_url, xp_required
-         FROM badges ORDER BY xp_required ASC",
-    )
-    .fetch_all(pool)
-    .await
-    .unwrap_or_default()
+    let col = pool.collection::<BadgeRow>(COLLECTION);
+    let cursor_result = col.find(doc! {}, None).await;
+    let mut cursor = match cursor_result {
+        Ok(c) => c,
+        Err(_) => return vec![],
+    };
+
+    let mut badges = Vec::new();
+    while let Some(result) = cursor.next().await {
+        if let Ok(badge) = result {
+            badges.push(badge);
+        }
+    }
+    badges
 }

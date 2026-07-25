@@ -85,7 +85,7 @@ async fn handle_socket(socket: WebSocket, user_id_str: String, state: Arc<AppSta
                                         let _ = database::messages::create(
                                             &pool,
                                             conv_uuid,
-                                            sender_user.id,
+                                            sender_user.user_id,
                                             content,
                                         )
                                         .await;

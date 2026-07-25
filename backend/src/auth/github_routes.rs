@@ -69,7 +69,7 @@ pub async fn github_auth_callback(
     // 5. Create a profile if this is a new user
     let _ = database::profiles::upsert(
         &state.pool,
-        user.id,
+        user.user_id,
         gh_user.bio.as_deref(),
         None, // location
         None, // website
@@ -79,24 +79,14 @@ pub async fn github_auth_callback(
     )
     .await;
 
-    // 6. Initialize contribution stats if new
-    let _ = sqlx::query(
-        "INSERT INTO contribution_stats (user_id)
-         VALUES ($1)
-         ON CONFLICT (user_id) DO NOTHING",
-    )
-    .bind(user.id)
-    .execute(&state.pool)
-    .await;
-
-    // 7. Generate a JWT for the user
-    let token = crate::auth::jwt::create_jwt(&user.id.to_string())
+    // 6. Generate a JWT for the user
+    let token = crate::auth::jwt::create_jwt(&user.user_id.to_string())
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("JWT error: {}", e)))?;
 
     Ok(Json(serde_json::json!({
         "token": token,
         "user": {
-            "id": user.id,
+            "id": user.user_id,
             "github_username": user.github_username,
             "github_id": user.github_id,
             "email": user.email,

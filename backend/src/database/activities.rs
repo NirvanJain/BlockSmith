@@ -1,8 +1,12 @@
-use sqlx::Row;
+use bson::doc;
+use futures_util::StreamExt;
+use mongodb::options::FindOptions;
 use uuid::Uuid;
 
 use super::db::DbPool;
 use super::models::{ActivityRow, FeedItem};
+
+const COLLECTION: &str = "activities";
 
 #[allow(clippy::too_many_arguments)]
 pub async fn create(
@@ -15,66 +19,85 @@ pub async fn create(
     link: Option<&str>,
     metadata: serde_json::Value,
     xp_earned: i32,
-) -> Result<ActivityRow, sqlx::Error> {
-    sqlx::query_as::<_, ActivityRow>(
-        "INSERT INTO activities (user_id, activity_type, repository_id, title, description, link, metadata, xp_earned)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING id, user_id, activity_type, repository_id, title, description, link, metadata, xp_earned, created_at",
-    )
-    .bind(user_id)
-    .bind(activity_type)
-    .bind(repository_id)
-    .bind(title)
-    .bind(description)
-    .bind(link)
-    .bind(metadata)
-    .bind(xp_earned)
-    .fetch_one(pool)
-    .await
+) -> Result<ActivityRow, mongodb::error::Error> {
+    let col = pool.collection::<ActivityRow>(COLLECTION);
+    let activity_id = Uuid::new_v4();
+    let now = chrono::Utc::now();
+
+    let activity = ActivityRow {
+        id: None,
+        activity_id,
+        user_id,
+        activity_type: activity_type.to_string(),
+        repository_id,
+        title: title.to_string(),
+        description: description.map(|s| s.to_string()),
+        link: link.map(|s| s.to_string()),
+        metadata,
+        xp_earned,
+        created_at: now,
+    };
+
+    col.insert_one(&activity, None).await?;
+    Ok(activity)
 }
 
 pub async fn get_feed(pool: &DbPool, limit: i64) -> Vec<FeedItem> {
-    let rows = sqlx::query(
-        "SELECT a.id, a.activity_type, a.title, a.description, a.link, a.xp_earned, a.created_at,
-                u.name as author_name, u.github_username as author_username, u.avatar_url as author_avatar,
-                r.name as repository_name
-         FROM activities a
-         JOIN users u ON a.user_id = u.id
-         LEFT JOIN repositories r ON a.repository_id = r.id
-         ORDER BY a.created_at DESC
-         LIMIT $1",
-    )
-    .bind(limit)
-    .fetch_all(pool)
-    .await
-    .unwrap_or_default();
+    let col = pool.collection::<ActivityRow>(COLLECTION);
+    let users_col = pool.collection::<super::models::UserRow>("users");
 
-    rows.into_iter()
-        .map(|row| FeedItem {
-            id: row.get("id"),
-            author_name: row.get("author_name"),
-            author_username: row.get("author_username"),
-            author_avatar: row.get("author_avatar"),
-            activity_type: row.get("activity_type"),
-            title: row.get("title"),
-            description: row.get("description"),
-            link: row.get("link"),
-            repository: row.get("repository_name"),
-            xp_earned: row.get("xp_earned"),
-            created_at: row.get("created_at"),
-        })
-        .collect()
+    let opts = FindOptions::builder()
+        .sort(doc! { "created_at": -1 })
+        .limit(Some(limit))
+        .build();
+    let mut cursor = col
+        .find(doc! {}, opts)
+        .await
+        .unwrap();
+
+    let mut items = Vec::new();
+    while let Some(result) = cursor.next().await {
+        if let Ok(activity) = result {
+            let author = users_col
+                .find_one(doc! { "user_id": activity.user_id.to_string() }, None)
+                .await
+                .ok()
+                .flatten();
+
+            items.push(FeedItem {
+                id: activity.activity_id,
+                author_name: author.as_ref().and_then(|a| a.name.clone()).unwrap_or_default(),
+                author_username: author.as_ref().and_then(|a| a.github_username.clone()).unwrap_or_default(),
+                author_avatar: author.as_ref().and_then(|a| a.avatar_url.clone()),
+                activity_type: activity.activity_type,
+                title: activity.title,
+                description: activity.description,
+                link: activity.link,
+                repository: None,
+                xp_earned: activity.xp_earned,
+                created_at: activity.created_at,
+            });
+        }
+    }
+    items
 }
 
 pub async fn get_user_activities(pool: &DbPool, user_id: Uuid, limit: i64) -> Vec<ActivityRow> {
-    sqlx::query_as::<_, ActivityRow>(
-        "SELECT id, user_id, activity_type, repository_id, title, description, link, metadata, xp_earned, created_at
-         FROM activities WHERE user_id = $1
-         ORDER BY created_at DESC LIMIT $2",
-    )
-    .bind(user_id)
-    .bind(limit)
-    .fetch_all(pool)
-    .await
-    .unwrap_or_default()
+    let col = pool.collection::<ActivityRow>(COLLECTION);
+    let opts = FindOptions::builder()
+        .sort(doc! { "created_at": -1 })
+        .limit(Some(limit))
+        .build();
+    let mut cursor = col
+        .find(doc! { "user_id": user_id.to_string() }, opts)
+        .await
+        .unwrap();
+
+    let mut items = Vec::new();
+    while let Some(result) = cursor.next().await {
+        if let Ok(item) = result {
+            items.push(item);
+        }
+    }
+    items
 }

@@ -1,22 +1,19 @@
+use bson::doc;
 use uuid::Uuid;
 
 use super::db::DbPool;
 use super::models::ProfileRow;
 
+const COLLECTION: &str = "profiles";
+
 pub async fn get(pool: &DbPool, user_id: Uuid) -> Option<ProfileRow> {
-    sqlx::query_as::<_, ProfileRow>(
-        "SELECT user_id, bio, location, website, twitter, linkedin, company,
-                skills, interests, updated_at
-         FROM profiles WHERE user_id = $1",
-    )
-    .bind(user_id)
-    .fetch_optional(pool)
-    .await
-    .ok()
-    .flatten()
+    let col = pool.collection::<ProfileRow>(COLLECTION);
+    col.find_one(doc! { "user_id": user_id.to_string() }, None)
+        .await
+        .ok()
+        .flatten()
 }
 
-#[allow(clippy::too_many_arguments)]
 pub async fn upsert(
     pool: &DbPool,
     user_id: Uuid,
@@ -26,27 +23,43 @@ pub async fn upsert(
     company: Option<&str>,
     skills: &[String],
     interests: &[String],
-) -> Result<(), sqlx::Error> {
-    sqlx::query(
-        "INSERT INTO profiles (user_id, bio, location, website, company, skills, interests)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         ON CONFLICT (user_id) DO UPDATE
-            SET bio = COALESCE(EXCLUDED.bio, profiles.bio),
-                location = COALESCE(EXCLUDED.location, profiles.location),
-                website = COALESCE(EXCLUDED.website, profiles.website),
-                company = COALESCE(EXCLUDED.company, profiles.company),
-                skills = COALESCE(EXCLUDED.skills, profiles.skills),
-                interests = COALESCE(EXCLUDED.interests, profiles.interests),
-                updated_at = CURRENT_TIMESTAMP",
-    )
-    .bind(user_id)
-    .bind(bio)
-    .bind(location)
-    .bind(website)
-    .bind(company)
-    .bind(skills)
-    .bind(interests)
-    .execute(pool)
-    .await?;
+) -> Result<(), mongodb::error::Error> {
+    let col = pool.collection::<ProfileRow>(COLLECTION);
+    let now = chrono::Utc::now();
+
+    let existing = col.find_one(doc! { "user_id": user_id.to_string() }, None).await?;
+
+    if existing.is_some() {
+        let mut update = doc! {};
+        if let Some(b) = bio { update.insert("bio", b); }
+        if let Some(l) = location { update.insert("location", l); }
+        if let Some(w) = website { update.insert("website", w); }
+        if let Some(c) = company { update.insert("company", c); }
+        if !skills.is_empty() { update.insert("skills", bson::to_bson(skills).unwrap_or_default()); }
+        if !interests.is_empty() { update.insert("interests", bson::to_bson(interests).unwrap_or_default()); }
+        update.insert("updated_at", bson::DateTime::from_millis(now.timestamp_millis()));
+
+        col.update_one(
+            doc! { "user_id": user_id.to_string() },
+            doc! { "$set": update },
+            None,
+        ).await?;
+    } else {
+        let profile = ProfileRow {
+            id: None,
+            user_id,
+            bio: bio.map(|s| s.to_string()),
+            location: location.map(|s| s.to_string()),
+            website: website.map(|s| s.to_string()),
+            twitter: None,
+            linkedin: None,
+            company: company.map(|s| s.to_string()),
+            skills: skills.to_vec(),
+            interests: interests.to_vec(),
+            updated_at: now,
+        };
+        col.insert_one(&profile, None).await?;
+    }
+
     Ok(())
 }

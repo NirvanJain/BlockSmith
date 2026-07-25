@@ -15,6 +15,7 @@ pub mod jobs;
 pub mod middleware;
 pub mod models;
 pub mod realtime;
+pub mod routes;
 pub mod services;
 pub mod utils;
 

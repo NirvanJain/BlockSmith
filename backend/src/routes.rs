@@ -10,15 +10,15 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::AppState;
-use blocksmith::database;
-use blocksmith::realtime::websockets::websocket_handler;
+use crate::database;
+use crate::realtime::websockets::websocket_handler;
 
 pub fn create_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/health", get(health_check))
-        .route("/api/v1/auth/github", get(blocksmith::auth::github_routes::github_auth_initiate))
-        .route("/api/v1/auth/github/callback", get(blocksmith::auth::github_routes::github_auth_callback))
-        .route("/api/v1/webhooks/github", post(blocksmith::github::webhooks::github_webhook_handler))
+        .route("/api/v1/auth/github", get(crate::auth::github_routes::github_auth_initiate))
+        .route("/api/v1/auth/github/callback", get(crate::auth::github_routes::github_auth_callback))
+        .route("/api/v1/webhooks/github", post(crate::github::webhooks::github_webhook_handler))
         .route("/api/v1/feed", get(get_feed))
         .route("/api/v1/leaderboard", get(get_leaderboard))
         .route("/api/v1/profile/:username", get(get_profile))
@@ -49,7 +49,7 @@ async fn authenticate_user(
     }
 
     let token = &auth_header[7..];
-    let claims = blocksmith::auth::jwt::verify_jwt(token)
+    let claims = crate::auth::jwt::verify_jwt(token)
         .await
         .map_err(|e| (StatusCode::UNAUTHORIZED, format!("Invalid token: {}", e)))?;
 
@@ -73,7 +73,7 @@ async fn get_me(
     let profile = database::profiles::get(&state.pool, user_id).await;
 
     Ok(Json(serde_json::json!({
-        "id": user.id,
+        "id": user.user_id,
         "github_username": user.github_username,
         "github_id": user.github_id,
         "email": user.email,
@@ -252,13 +252,13 @@ async fn get_profile(
         }
     };
 
-    let profile = database::profiles::get(&state.pool, user.id).await;
-    let badges = database::badges::get_user_badges(&state.pool, user.id).await;
-    let activities = database::activities::get_user_activities(&state.pool, user.id, 10).await;
+    let profile = database::profiles::get(&state.pool, user.user_id).await;
+    let badges = database::badges::get_user_badges(&state.pool, user.user_id).await;
+    let activities = database::activities::get_user_activities(&state.pool, user.user_id, 10).await;
 
     Ok(Json(serde_json::json!({
         "user": {
-            "id": user.id,
+            "id": user.user_id,
             "name": user.name,
             "github_username": user.github_username,
             "avatar_url": user.avatar_url,
@@ -367,7 +367,7 @@ async fn get_conversations(
         .into_iter()
         .map(|c| {
             serde_json::json!({
-                "id": c.conversation.id,
+                "id": c.conversation.conversation_id,
                 "is_group": c.conversation.is_group,
                 "name": c.conversation.name,
                 "participants": c.participants.into_iter().map(|p| {
@@ -402,22 +402,22 @@ async fn create_conversation(
         .await
         .ok_or((StatusCode::NOT_FOUND, "Recipient not found".to_string()))?;
 
-    if let Some(existing) = database::conversations::find_existing_dm(&state.pool, sender_id, recipient.id).await {
-        return Ok(Json(serde_json::json!({ "id": existing.id })));
+    if let Some(existing) = database::conversations::find_existing_dm(&state.pool, sender_id, recipient.user_id).await {
+        return Ok(Json(serde_json::json!({ "id": existing.conversation_id })));
     }
 
     let convo = database::conversations::create(&state.pool)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    database::conversations::add_participant(&state.pool, convo.id, sender_id)
+    database::conversations::add_participant(&state.pool, convo.conversation_id, sender_id)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    database::conversations::add_participant(&state.pool, convo.id, recipient.id)
+    database::conversations::add_participant(&state.pool, convo.conversation_id, recipient.user_id)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    Ok(Json(serde_json::json!({ "id": convo.id })))
+    Ok(Json(serde_json::json!({ "id": convo.conversation_id })))
 }
 
 async fn get_messages(

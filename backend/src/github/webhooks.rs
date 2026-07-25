@@ -117,7 +117,7 @@ pub async fn github_webhook_handler(
 
                 database::activities::create(
                     &state.pool,
-                    user.id,
+                    user.user_id,
                     "pr_merged",
                     Some(repo_uuid),
                     &activity_title,
@@ -133,17 +133,17 @@ pub async fn github_webhook_handler(
                 let new_level = (new_xp / 100) + 1;
                 let new_reputation = user.reputation_score + xp_earned;
 
-                database::users::update_reputation(&state.pool, user.id, new_xp, new_reputation, new_level)
+                database::users::update_reputation(&state.pool, user.user_id, new_xp, new_reputation, new_level)
                     .await
                     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-                database::repositories::increment_prs_merged(&state.pool, user.id)
+                database::repositories::increment_prs_merged(&state.pool, user.user_id)
                     .await
                     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
                 database::repositories::record_reputation_change(
                     &state.pool,
-                    user.id,
+                    user.user_id,
                     xp_earned,
                     &format!("Merged PR: {}", pr_title),
                 )

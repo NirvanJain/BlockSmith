@@ -1,56 +1,83 @@
+use bson::doc;
 use uuid::Uuid;
 
 use super::db::DbPool;
 
-/// Upsert a repository by its GitHub ID. Returns the repository UUID.
+const COLLECTION: &str = "repositories";
+
 pub async fn upsert(
     pool: &DbPool,
     github_id: i64,
     name: &str,
     owner: &str,
-) -> Result<Uuid, sqlx::Error> {
-    sqlx::query_scalar::<_, Uuid>(
-        "INSERT INTO repositories (github_id, name, owner)
-         VALUES ($1, $2, $3)
-         ON CONFLICT (github_id) DO UPDATE SET name = EXCLUDED.name, owner = EXCLUDED.owner
-         RETURNING id",
-    )
-    .bind(github_id)
-    .bind(name)
-    .bind(owner)
-    .fetch_one(pool)
-    .await
+) -> Result<Uuid, mongodb::error::Error> {
+    let col = pool.collection::<bson::Document>(COLLECTION);
+    let now = chrono::Utc::now();
+
+    let existing = col.find_one(doc! { "github_id": github_id }, None).await?;
+
+    if let Some(doc) = existing {
+        let repo_id_str = doc.get_str("repo_id").unwrap_or("");
+        let repo_id = Uuid::parse_str(repo_id_str).unwrap_or_else(|_| Uuid::new_v4());
+
+        col.update_one(
+            doc! { "github_id": github_id },
+            doc! { "$set": { "name": name, "owner": owner } },
+            None,
+        ).await?;
+
+        return Ok(repo_id);
+    }
+
+    let repo_id = Uuid::new_v4();
+    col.insert_one(doc! {
+        "repo_id": repo_id.to_string(),
+        "github_id": github_id,
+        "name": name,
+        "owner": owner,
+        "created_at": bson::DateTime::from_millis(now.timestamp_millis()),
+    }, None).await?;
+
+    Ok(repo_id)
 }
 
-/// Increment the prs_merged counter for a user. Creates the row if it doesn't exist.
-pub async fn increment_prs_merged(pool: &DbPool, user_id: Uuid) -> Result<(), sqlx::Error> {
-    sqlx::query(
-        "INSERT INTO contribution_stats (user_id, prs_merged)
-         VALUES ($1, 1)
-         ON CONFLICT (user_id) DO UPDATE
-         SET prs_merged = contribution_stats.prs_merged + 1",
-    )
-    .bind(user_id)
-    .execute(pool)
-    .await?;
+pub async fn increment_prs_merged(pool: &DbPool, user_id: Uuid) -> Result<(), mongodb::error::Error> {
+    let col = pool.collection::<bson::Document>("contribution_stats");
+
+    let existing = col.find_one(doc! { "user_id": user_id.to_string() }, None).await?;
+
+    if existing.is_some() {
+        col.update_one(
+            doc! { "user_id": user_id.to_string() },
+            doc! { "$inc": { "prs_merged": 1 } },
+            None,
+        ).await?;
+    } else {
+        col.insert_one(doc! {
+            "user_id": user_id.to_string(),
+            "prs_opened": 0,
+            "prs_merged": 1,
+            "issues_opened": 0,
+            "commits_pushed": 0,
+            "stars_given": 0,
+        }, None).await?;
+    }
+
     Ok(())
 }
 
-/// Record a reputation change in the history table.
 pub async fn record_reputation_change(
     pool: &DbPool,
     user_id: Uuid,
     amount: i32,
     reason: &str,
-) -> Result<(), sqlx::Error> {
-    sqlx::query(
-        "INSERT INTO reputation_history (user_id, amount, reason)
-         VALUES ($1, $2, $3)",
-    )
-    .bind(user_id)
-    .bind(amount)
-    .bind(reason)
-    .execute(pool)
-    .await?;
+) -> Result<(), mongodb::error::Error> {
+    let col = pool.collection::<bson::Document>("reputation_history");
+    col.insert_one(doc! {
+        "user_id": user_id.to_string(),
+        "amount": amount,
+        "reason": reason,
+        "created_at": bson::DateTime::from_millis(chrono::Utc::now().timestamp_millis()),
+    }, None).await?;
     Ok(())
 }

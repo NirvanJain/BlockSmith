@@ -1,33 +1,45 @@
-use sqlx::Row;
+use bson::doc;
+use futures_util::StreamExt;
+use mongodb::options::FindOptions;
 use uuid::Uuid;
 
 use super::db::DbPool;
 use super::models::{MessageRow, MessageResponse};
 
-pub async fn get_messages(pool: &DbPool, conversation_id: Uuid) -> Vec<MessageResponse> {
-    let rows = sqlx::query(
-        "SELECT m.id, m.sender_id, m.content, m.created_at,
-                u.name as sender_name, u.avatar_url as sender_avatar
-         FROM messages m
-         JOIN users u ON m.sender_id = u.id
-         WHERE m.conversation_id = $1
-         ORDER BY m.created_at ASC",
-    )
-    .bind(conversation_id)
-    .fetch_all(pool)
-    .await
-    .unwrap_or_default();
+const COLLECTION: &str = "messages";
 
-    rows.into_iter()
-        .map(|row| MessageResponse {
-            id: row.get("id"),
-            sender_id: row.get("sender_id"),
-            sender_name: row.get("sender_name"),
-            sender_avatar: row.get("sender_avatar"),
-            content: row.get("content"),
-            created_at: row.get("created_at"),
-        })
-        .collect()
+pub async fn get_messages(pool: &DbPool, conversation_id: Uuid) -> Vec<MessageResponse> {
+    let col = pool.collection::<MessageRow>(COLLECTION);
+    let users_col = pool.collection::<bson::Document>("users");
+
+    let opts = FindOptions::builder()
+        .sort(doc! { "created_at": 1 })
+        .build();
+    let mut cursor = col
+        .find(doc! { "conversation_id": conversation_id.to_string() }, opts)
+        .await
+        .unwrap();
+
+    let mut messages = Vec::new();
+    while let Some(result) = cursor.next().await {
+        if let Ok(msg) = result {
+            let sender = users_col
+                .find_one(doc! { "user_id": msg.sender_id.to_string() }, None)
+                .await
+                .ok()
+                .flatten();
+
+            messages.push(MessageResponse {
+                id: msg.message_id,
+                sender_id: msg.sender_id,
+                sender_name: sender.as_ref().and_then(|s| s.get_str("name").ok()).map(|s| s.to_string()),
+                sender_avatar: sender.as_ref().and_then(|s| s.get_str("avatar_url").ok()).map(|s| s.to_string()),
+                content: msg.content,
+                created_at: msg.created_at,
+            });
+        }
+    }
+    messages
 }
 
 pub async fn create(
@@ -35,15 +47,20 @@ pub async fn create(
     conversation_id: Uuid,
     sender_id: Uuid,
     content: &str,
-) -> Result<MessageRow, sqlx::Error> {
-    sqlx::query_as::<_, MessageRow>(
-        "INSERT INTO messages (conversation_id, sender_id, content)
-         VALUES ($1, $2, $3)
-         RETURNING id, conversation_id, sender_id, content, created_at",
-    )
-    .bind(conversation_id)
-    .bind(sender_id)
-    .bind(content)
-    .fetch_one(pool)
-    .await
+) -> Result<MessageRow, mongodb::error::Error> {
+    let col = pool.collection::<MessageRow>(COLLECTION);
+    let message_id = Uuid::new_v4();
+    let now = chrono::Utc::now();
+
+    let msg = MessageRow {
+        id: None,
+        message_id,
+        conversation_id,
+        sender_id,
+        content: content.to_string(),
+        created_at: now,
+    };
+
+    col.insert_one(&msg, None).await?;
+    Ok(msg)
 }

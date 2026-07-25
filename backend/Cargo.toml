@@ -34,16 +34,10 @@ serde = { version = "1", features = [
 serde_json = "1"
 
 # =========================
-# Database
+# Database (MongoDB)
 # =========================
-sqlx = { version = "0.7", features = [
-    "runtime-tokio-rustls",
-    "postgres",
-    "chrono",
-    "uuid",
-    "json",
-    "macros",
-] }
+mongodb = "2.8"
+bson = { version = "2", features = ["chrono", "uuid-0_8"] }
 
 # =========================
 # Environment Variables
@@ -104,13 +98,6 @@ tracing-subscriber = { version = "0.3", features = [
 ] }
 
 # =========================
-# Redis Cache
-# =========================
-redis = { version = "0.25", features = [
-    "tokio-comp",
-] }
-
-# =========================
 # Validation
 # =========================
 validator = { version = "0.18", features = [
@@ -126,6 +113,11 @@ rand = "0.8"
 # Async Traits
 # =========================
 async-trait = "0.1"
+
+# =========================
+# Cache (Redis)
+# =========================
+redis = { version = "0.25", features = ["tokio-comp"] }
 
 # =========================
 # Error Handling
