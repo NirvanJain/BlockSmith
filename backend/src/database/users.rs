@@ -5,7 +5,8 @@ use super::models::UserRow;
 
 pub async fn find_by_clerk_id(pool: &DbPool, clerk_user_id: &str) -> Option<UserRow> {
     sqlx::query_as::<_, UserRow>(
-        "SELECT id, clerk_user_id, github_username, github_id, email, name, avatar_url,
+        "SELECT id, clerk_user_id, github_username, github_id, github_access_token,
+                email, name, avatar_url,
                 reputation_score, trust_score, total_contributions, xp, level,
                 created_at, updated_at
          FROM users WHERE clerk_user_id = $1",
@@ -19,12 +20,28 @@ pub async fn find_by_clerk_id(pool: &DbPool, clerk_user_id: &str) -> Option<User
 
 pub async fn find_by_github_username(pool: &DbPool, github_username: &str) -> Option<UserRow> {
     sqlx::query_as::<_, UserRow>(
-        "SELECT id, clerk_user_id, github_username, github_id, email, name, avatar_url,
+        "SELECT id, clerk_user_id, github_username, github_id, github_access_token,
+                email, name, avatar_url,
                 reputation_score, trust_score, total_contributions, xp, level,
                 created_at, updated_at
          FROM users WHERE github_username = $1",
     )
     .bind(github_username)
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten()
+}
+
+pub async fn find_by_github_id(pool: &DbPool, github_id: &str) -> Option<UserRow> {
+    sqlx::query_as::<_, UserRow>(
+        "SELECT id, clerk_user_id, github_username, github_id, github_access_token,
+                email, name, avatar_url,
+                reputation_score, trust_score, total_contributions, xp, level,
+                created_at, updated_at
+         FROM users WHERE github_id = $1",
+    )
+    .bind(github_id)
     .fetch_optional(pool)
     .await
     .ok()
@@ -42,7 +59,8 @@ pub async fn create(
     sqlx::query_as::<_, UserRow>(
         "INSERT INTO users (clerk_user_id, github_username, email, name, avatar_url)
          VALUES ($1, $2, $3, $4, $5)
-         RETURNING id, clerk_user_id, github_username, github_id, email, name, avatar_url,
+         RETURNING id, clerk_user_id, github_username, github_id, github_access_token,
+                   email, name, avatar_url,
                    reputation_score, trust_score, total_contributions, xp, level,
                    created_at, updated_at",
     )
@@ -70,7 +88,8 @@ pub async fn upsert_from_clerk(
                 name = COALESCE(EXCLUDED.name, users.name),
                 avatar_url = COALESCE(EXCLUDED.avatar_url, users.avatar_url),
                 updated_at = CURRENT_TIMESTAMP
-         RETURNING id, clerk_user_id, github_username, github_id, email, name, avatar_url,
+         RETURNING id, clerk_user_id, github_username, github_id, github_access_token,
+                   email, name, avatar_url,
                    reputation_score, trust_score, total_contributions, xp, level,
                    created_at, updated_at",
     )

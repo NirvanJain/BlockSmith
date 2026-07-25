@@ -10,6 +10,7 @@ pub struct UserRow {
     pub clerk_user_id: String,
     pub github_username: Option<String>,
     pub github_id: Option<String>,
+    pub github_access_token: Option<String>,
     pub email: Option<String>,
     pub name: Option<String>,
     pub avatar_url: Option<String>,
