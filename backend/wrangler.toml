@@ -1,0 +1,16 @@
+name = "blocksmith"
+main = "src/index.ts"
+compatibility_date = "2025-01-15"
+
+[vars]
+APP_NAME = "BlockSmith"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "blocksmith-db"
+database_id = "placeholder-replace-with-real-id"
+migrations_dir = "migrations"
+
+# Uncomment when deploying:
+# [env.production]
+# name = "blocksmith-prod"
