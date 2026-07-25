@@ -16,7 +16,8 @@ use blocksmith::realtime::websockets::websocket_handler;
 pub fn create_routes() -> Router<Arc<AppState>> {
     Router::new()
         .route("/health", get(health_check))
-        .route("/api/v1/webhooks/clerk", post(blocksmith::auth::clerk_webhooks::handle_clerk_webhook))
+        .route("/api/v1/auth/github", get(blocksmith::auth::github_routes::github_auth_initiate))
+        .route("/api/v1/auth/github/callback", get(blocksmith::auth::github_routes::github_auth_callback))
         .route("/api/v1/webhooks/github", post(blocksmith::github::webhooks::github_webhook_handler))
         .route("/api/v1/feed", get(get_feed))
         .route("/api/v1/leaderboard", get(get_leaderboard))
@@ -53,11 +54,11 @@ async fn authenticate_user(
         .await
         .map_err(|e| (StatusCode::UNAUTHORIZED, format!("Invalid token: {}", e)))?;
 
-    let user = database::users::find_by_clerk_id(pool, &claims.sub)
-        .await
-        .ok_or((StatusCode::NOT_FOUND, "User not found".to_string()))?;
+    // claims.sub is the user's UUID as a string
+    let user_id = uuid::Uuid::parse_str(&claims.sub)
+        .map_err(|_| (StatusCode::UNAUTHORIZED, "Invalid token subject".to_string()))?;
 
-    Ok(user.id)
+    Ok(user_id)
 }
 
 async fn get_me(
@@ -66,16 +67,7 @@ async fn get_me(
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
     let user_id = authenticate_user(&headers, &state.pool).await?;
 
-    let auth_header = headers
-        .get("authorization")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("Bearer ");
-    let token = auth_header.trim_start_matches("Bearer ");
-    let claims = blocksmith::auth::jwt::verify_jwt(token)
-        .await
-        .map_err(|e| (StatusCode::UNAUTHORIZED, e.to_string()))?;
-
-    let user = database::users::find_by_clerk_id(&state.pool, &claims.sub)
+    let user = database::users::find_by_id(&state.pool, user_id)
         .await
         .ok_or((StatusCode::NOT_FOUND, "User not found".to_string()))?;
 
@@ -83,7 +75,6 @@ async fn get_me(
 
     Ok(Json(serde_json::json!({
         "id": user.id,
-        "clerk_user_id": user.clerk_user_id,
         "github_username": user.github_username,
         "github_id": user.github_id,
         "email": user.email,

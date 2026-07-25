@@ -1,4 +1,5 @@
 pub mod github_oauth;
+pub mod github_routes;
 pub mod guards;
 pub mod jwt;
 pub mod middleware;
@@ -7,4 +8,3 @@ pub mod permissions;
 pub mod refresh_tokens;
 pub mod roles;
 pub mod session;
-pub mod clerk_webhooks;

@@ -41,7 +41,7 @@ pub async fn websocket_handler(
     }
 }
 
-async fn handle_socket(socket: WebSocket, clerk_user_id: String, state: Arc<AppState>) {
+async fn handle_socket(socket: WebSocket, user_id_str: String, state: Arc<AppState>) {
     let (mut sender, mut receiver) = socket.split();
     let mut feed_rx = state.ws_state.feed_tx.subscribe();
 
@@ -58,7 +58,7 @@ async fn handle_socket(socket: WebSocket, clerk_user_id: String, state: Arc<AppS
     });
 
     let pool = state.pool.clone();
-    let clerk_id_for_recv = clerk_user_id.clone();
+    let user_id_for_recv = user_id_str.clone();
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(message)) = receiver.next().await {
             match message {
@@ -75,9 +75,12 @@ async fn handle_socket(socket: WebSocket, clerk_user_id: String, state: Arc<AppS
                             if let Some(content) =
                                 chat_payload.get("content").and_then(|v| v.as_str())
                             {
-                                if let Ok(conv_uuid) = uuid::Uuid::parse_str(conv_id_str) {
+                                if let (Ok(conv_uuid), Ok(uid)) = (
+                                    uuid::Uuid::parse_str(conv_id_str),
+                                    uuid::Uuid::parse_str(&user_id_for_recv),
+                                ) {
                                     if let Some(sender_user) =
-                                        database::users::find_by_clerk_id(&pool, &clerk_id_for_recv).await
+                                        database::users::find_by_id(&pool, uid).await
                                     {
                                         let _ = database::messages::create(
                                             &pool,
@@ -105,5 +108,5 @@ async fn handle_socket(socket: WebSocket, clerk_user_id: String, state: Arc<AppS
         _ = (&mut recv_task) => send_task.abort(),
     };
 
-    println!("WebSocket connection closed for user: {}", clerk_user_id);
+    println!("WebSocket connection closed for user: {}", user_id_str);
 }

@@ -7,7 +7,7 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct UserRow {
     pub id: Uuid,
-    pub clerk_user_id: String,
+    pub clerk_user_id: Option<String>,
     pub github_username: Option<String>,
     pub github_id: Option<String>,
     pub github_access_token: Option<String>,

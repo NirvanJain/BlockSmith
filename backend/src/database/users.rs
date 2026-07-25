@@ -3,30 +3,16 @@ use uuid::Uuid;
 use super::db::DbPool;
 use super::models::UserRow;
 
-pub async fn find_by_clerk_id(pool: &DbPool, clerk_user_id: &str) -> Option<UserRow> {
-    sqlx::query_as::<_, UserRow>(
-        "SELECT id, clerk_user_id, github_username, github_id, github_access_token,
-                email, name, avatar_url,
-                reputation_score, trust_score, total_contributions, xp, level,
-                created_at, updated_at
-         FROM users WHERE clerk_user_id = $1",
-    )
-    .bind(clerk_user_id)
-    .fetch_optional(pool)
-    .await
-    .ok()
-    .flatten()
-}
+const SELECT_COLUMNS: &str = "id, clerk_user_id, github_username, github_id, github_access_token,
+        email, name, avatar_url,
+        reputation_score, trust_score, total_contributions, xp, level,
+        created_at, updated_at";
 
-pub async fn find_by_github_username(pool: &DbPool, github_username: &str) -> Option<UserRow> {
+pub async fn find_by_id(pool: &DbPool, user_id: Uuid) -> Option<UserRow> {
     sqlx::query_as::<_, UserRow>(
-        "SELECT id, clerk_user_id, github_username, github_id, github_access_token,
-                email, name, avatar_url,
-                reputation_score, trust_score, total_contributions, xp, level,
-                created_at, updated_at
-         FROM users WHERE github_username = $1",
+        &format!("SELECT {} FROM users WHERE id = $1", SELECT_COLUMNS),
     )
-    .bind(github_username)
+    .bind(user_id)
     .fetch_optional(pool)
     .await
     .ok()
@@ -35,11 +21,7 @@ pub async fn find_by_github_username(pool: &DbPool, github_username: &str) -> Op
 
 pub async fn find_by_github_id(pool: &DbPool, github_id: &str) -> Option<UserRow> {
     sqlx::query_as::<_, UserRow>(
-        "SELECT id, clerk_user_id, github_username, github_id, github_access_token,
-                email, name, avatar_url,
-                reputation_score, trust_score, total_contributions, xp, level,
-                created_at, updated_at
-         FROM users WHERE github_id = $1",
+        &format!("SELECT {} FROM users WHERE github_id = $1", SELECT_COLUMNS),
     )
     .bind(github_id)
     .fetch_optional(pool)
@@ -48,52 +30,45 @@ pub async fn find_by_github_id(pool: &DbPool, github_id: &str) -> Option<UserRow
     .flatten()
 }
 
-pub async fn create(
-    pool: &DbPool,
-    clerk_user_id: &str,
-    github_username: Option<&str>,
-    email: Option<&str>,
-    name: Option<&str>,
-    avatar_url: Option<&str>,
-) -> Result<UserRow, sqlx::Error> {
+pub async fn find_by_github_username(pool: &DbPool, github_username: &str) -> Option<UserRow> {
     sqlx::query_as::<_, UserRow>(
-        "INSERT INTO users (clerk_user_id, github_username, email, name, avatar_url)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING id, clerk_user_id, github_username, github_id, github_access_token,
-                   email, name, avatar_url,
-                   reputation_score, trust_score, total_contributions, xp, level,
-                   created_at, updated_at",
+        &format!("SELECT {} FROM users WHERE github_username = $1", SELECT_COLUMNS),
     )
-    .bind(clerk_user_id)
     .bind(github_username)
-    .bind(email)
-    .bind(name)
-    .bind(avatar_url)
-    .fetch_one(pool)
+    .fetch_optional(pool)
     .await
+    .ok()
+    .flatten()
 }
 
-pub async fn upsert_from_clerk(
+/// Upsert a user from GitHub OAuth. The `github_id` is the primary identifier.
+pub async fn upsert_from_github(
     pool: &DbPool,
-    clerk_user_id: &str,
+    github_id: &str,
+    github_username: &str,
     email: Option<&str>,
     name: Option<&str>,
     avatar_url: Option<&str>,
+    access_token: &str,
 ) -> Result<UserRow, sqlx::Error> {
     sqlx::query_as::<_, UserRow>(
-        "INSERT INTO users (clerk_user_id, email, name, avatar_url)
-         VALUES ($1, $2, $3, $4)
-         ON CONFLICT (clerk_user_id) DO UPDATE
-            SET email = COALESCE(EXCLUDED.email, users.email),
-                name = COALESCE(EXCLUDED.name, users.name),
-                avatar_url = COALESCE(EXCLUDED.avatar_url, users.avatar_url),
-                updated_at = CURRENT_TIMESTAMP
-         RETURNING id, clerk_user_id, github_username, github_id, github_access_token,
-                   email, name, avatar_url,
-                   reputation_score, trust_score, total_contributions, xp, level,
-                   created_at, updated_at",
+        &format!(
+            "INSERT INTO users (github_id, github_username, github_access_token, email, name, avatar_url)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (github_id) DO UPDATE
+                SET github_username = EXCLUDED.github_username,
+                    github_access_token = EXCLUDED.github_access_token,
+                    email = COALESCE(EXCLUDED.email, users.email),
+                    name = COALESCE(EXCLUDED.name, users.name),
+                    avatar_url = COALESCE(EXCLUDED.avatar_url, users.avatar_url),
+                    updated_at = CURRENT_TIMESTAMP
+             RETURNING {}",
+            SELECT_COLUMNS
+        )
     )
-    .bind(clerk_user_id)
+    .bind(github_id)
+    .bind(github_username)
+    .bind(access_token)
     .bind(email)
     .bind(name)
     .bind(avatar_url)
@@ -149,9 +124,17 @@ pub async fn update_reputation(
     Ok(())
 }
 
-pub async fn delete(pool: &DbPool, clerk_user_id: &str) -> Result<(), sqlx::Error> {
-    sqlx::query("DELETE FROM users WHERE clerk_user_id = $1")
-        .bind(clerk_user_id)
+pub async fn delete_by_id(pool: &DbPool, user_id: Uuid) -> Result<(), sqlx::Error> {
+    sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(user_id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+pub async fn delete_by_github_id(pool: &DbPool, github_id: &str) -> Result<(), sqlx::Error> {
+    sqlx::query("DELETE FROM users WHERE github_id = $1")
+        .bind(github_id)
         .execute(pool)
         .await?;
     Ok(())

@@ -9,5 +9,6 @@ pub mod messages;
 pub mod migrations;
 pub mod models;
 pub mod profiles;
+pub mod repositories;
 pub mod transactions;
 pub mod users;

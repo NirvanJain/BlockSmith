@@ -108,18 +108,9 @@ pub async fn github_webhook_handler(
                     None => return Err((StatusCode::NOT_FOUND, "User not found".to_string())),
                 };
 
-                let repo_uuid = sqlx::query_scalar::<_, uuid::Uuid>(
-                    "INSERT INTO repositories (github_id, name, owner)
-                     VALUES ($1, $2, $3)
-                     ON CONFLICT (github_id) DO UPDATE SET name = EXCLUDED.name, owner = EXCLUDED.owner
-                     RETURNING id",
-                )
-                .bind(github_repo_id)
-                .bind(repo_name)
-                .bind(repo_owner)
-                .fetch_one(&state.pool)
-                .await
-                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+                let repo_uuid = database::repositories::upsert(&state.pool, github_repo_id, repo_name, repo_owner)
+                    .await
+                    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
                 let xp_earned = 10;
                 let activity_title = format!("Merged PR #{} in {}/{}", pr_num, repo_owner, repo_name);
@@ -146,25 +137,16 @@ pub async fn github_webhook_handler(
                     .await
                     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-                sqlx::query(
-                    "INSERT INTO contribution_stats (user_id, prs_merged)
-                     VALUES ($1, 1)
-                     ON CONFLICT (user_id) DO UPDATE
-                     SET prs_merged = contribution_stats.prs_merged + 1",
-                )
-                .bind(user.id)
-                .execute(&state.pool)
-                .await
-                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+                database::repositories::increment_prs_merged(&state.pool, user.id)
+                    .await
+                    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-                sqlx::query(
-                    "INSERT INTO reputation_history (user_id, amount, reason)
-                     VALUES ($1, $2, $3)",
+                database::repositories::record_reputation_change(
+                    &state.pool,
+                    user.id,
+                    xp_earned,
+                    &format!("Merged PR: {}", pr_title),
                 )
-                .bind(user.id)
-                .bind(xp_earned)
-                .bind(format!("Merged PR: {}", pr_title))
-                .execute(&state.pool)
                 .await
                 .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
             }
