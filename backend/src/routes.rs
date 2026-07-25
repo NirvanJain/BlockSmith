@@ -10,7 +10,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::AppState;
-use blocksmith::database::{self, db::DbPool};
+use blocksmith::database;
 use blocksmith::realtime::websockets::websocket_handler;
 
 pub fn create_routes() -> Router<Arc<AppState>> {
@@ -35,7 +35,6 @@ async fn health_check() -> &'static str {
 
 async fn authenticate_user(
     headers: &axum::http::HeaderMap,
-    pool: &DbPool,
 ) -> Result<Uuid, (StatusCode, String)> {
     let auth_header = headers
         .get("authorization")
@@ -65,7 +64,7 @@ async fn get_me(
     headers: axum::http::HeaderMap,
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let user_id = authenticate_user(&headers, &state.pool).await?;
+    let user_id = authenticate_user(&headers).await?;
 
     let user = database::users::find_by_id(&state.pool, user_id)
         .await
@@ -361,7 +360,7 @@ async fn get_conversations(
     headers: axum::http::HeaderMap,
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let user_id = authenticate_user(&headers, &state.pool).await?;
+    let user_id = authenticate_user(&headers).await?;
     let conversations = database::conversations::get_user_conversations(&state.pool, user_id).await;
 
     let list: Vec<serde_json::Value> = conversations
@@ -397,7 +396,7 @@ async fn create_conversation(
     State(state): State<Arc<AppState>>,
     Json(req): Json<CreateConvRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let sender_id = authenticate_user(&headers, &state.pool).await?;
+    let sender_id = authenticate_user(&headers).await?;
 
     let recipient = database::users::find_by_github_username(&state.pool, &req.recipient_username)
         .await
@@ -426,7 +425,7 @@ async fn get_messages(
     headers: axum::http::HeaderMap,
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let _user_id = authenticate_user(&headers, &state.pool).await?;
+    let _user_id = authenticate_user(&headers).await?;
     let messages = database::messages::get_messages(&state.pool, conv_id).await;
 
     let list: Vec<serde_json::Value> = messages
