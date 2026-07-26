@@ -6,6 +6,10 @@ export interface Env {
   GITHUB_REDIRECT_URI: string;
 }
 
+export type Variables = {
+  userId: string;
+};
+
 export interface UserRow {
   id: string;
   githubId: string | null;
@@ -31,8 +35,8 @@ export interface ProfileRow {
   twitter: string | null;
   linkedin: string | null;
   company: string | null;
-  skills: string; // JSON array
-  interests: string; // JSON array
+  skills: string;
+  interests: string;
   updatedAt: string;
 }
 
@@ -67,7 +71,7 @@ export interface DiscoveryItem {
   title: string;
   body: string | null;
   state: string;
-  labels: string; // JSON array
+  labels: string;
   creatorUsername: string;
   aiComplexityScore: number | null;
   aiMatchScore: number | null;
