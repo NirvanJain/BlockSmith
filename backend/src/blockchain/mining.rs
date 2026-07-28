@@ -27,3 +27,4 @@ pub fn mine_block(
         nonce += 1;
     }
 }
+
