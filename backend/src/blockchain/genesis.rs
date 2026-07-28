@@ -3,6 +3,7 @@ use chrono::Utc;
 use crate::blockchain::block::Block;
 
 pub fn create_genesis_block(
+
 ) -> Block {
     Block {
         index: 0,
