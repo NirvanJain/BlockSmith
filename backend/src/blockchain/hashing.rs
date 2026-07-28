@@ -7,7 +7,7 @@ pub fn generate_hash(
     repository: &str,
     contribution_type: &str,
     contribution_link: &str,
-    previous_hash: &str,
+    previous_hash: &str, 
 ) -> String {
     let input = format!(
         "{}{}{}{}{}{}{}",
