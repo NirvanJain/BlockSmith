@@ -21,7 +21,7 @@ pub fn validate_chain(
 
         // Recalculate hash
         let recalculated_hash =
-            generate_hash(
+            generate_hash( 
                 current.index,
                 &current.timestamp,
                 &current.contributor,
