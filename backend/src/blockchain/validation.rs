@@ -38,4 +38,4 @@ pub fn validate_chain(
     }
 
     true
-}
+} 
