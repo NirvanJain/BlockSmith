@@ -17,7 +17,6 @@ interface PostProps {
     views: number
   }
 }
-
 export default function Post({ author, content, type, repository, timestamp, stats }: PostProps) {
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(stats.likes)
@@ -28,7 +27,7 @@ export default function Post({ author, content, type, repository, timestamp, sta
     commit: { label: 'Commit', color: 'bg-[#1d9bf0]' },
     post: { label: 'Post', color: 'bg-[#71767b]' },
   }
-
+  
   const handleLike = () => {
     setLiked(!liked)
     setLikeCount(liked ? likeCount - 1 : likeCount + 1)
