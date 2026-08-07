@@ -48,6 +48,7 @@ export default function Notifications() {
                 <span className="text-[#71767b] text-sm ml-2">· {n.time}</span>
               </div>
             </div>
+            
           ))}
       </div>
     </div>
