@@ -27,7 +27,7 @@ export default function Explore() {
           >
             Trending
           </button>
-          
+
           <button
             onClick={() => setActiveTab('issues')}
             className={`flex-1 py-3 text-sm transition-colors hover:bg-[rgba(231,233,234,0.1)] ${
@@ -36,6 +36,7 @@ export default function Explore() {
           >
             Issues
           </button>
+          
           <button
             onClick={() => setActiveTab('developers')}
             className={`flex-1 py-3 text-sm transition-colors hover:bg-[rgba(231,233,234,0.1)] ${
