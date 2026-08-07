@@ -88,7 +88,7 @@ export default function Settings() {
                   <div className="font-bold text-sm">Allow photo tags</div>
                   <div className="text-[#71767b] text-sm mt-1">Allow anyone to tag you in photos</div>
                 </div>
-                
+
                 <button className="w-12 h-6 bg-[#333639] rounded-full relative">
                   <span className="absolute left-1 top-1 w-4 h-4 bg-[#71767b] rounded-full" />
                 </button>
@@ -105,9 +105,11 @@ export default function Settings() {
                   <div className="font-bold text-sm">Push notifications</div>
                   <div className="text-[#71767b] text-sm mt-1">Receive push notifications for activity</div>
                 </div>
+
                 <button className="w-12 h-6 bg-[#1d9bf0] rounded-full relative">
                   <span className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full" />
                 </button>
+                
               </div>
             </div>
             <div className="bg-[#16181c] rounded-lg p-4">
