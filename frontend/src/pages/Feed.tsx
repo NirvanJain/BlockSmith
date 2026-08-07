@@ -43,7 +43,6 @@ const mockPosts = [
 
 export default function Feed() {
   const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou')
-
   return (
     <div>
       {/* Header */}
