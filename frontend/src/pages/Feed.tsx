@@ -70,7 +70,6 @@ export default function Feed() {
       </div>
       {/* Compose */}
       <ComposePost />
-
       {/* Posts */}
       <div>
         {mockPosts.map((post) => (
