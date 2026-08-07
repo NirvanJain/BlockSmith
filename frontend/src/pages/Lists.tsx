@@ -4,7 +4,6 @@ export default function Lists() {
     { id: 2, name: 'BlockSmith Team', members: 8 },
     { id: 3, name: 'Open Source Mentors', members: 15 },
   ]
-
   return (
     <div>
       <div className="sticky top-0 z-10 bg-[rgba(0,0,0,0.65)] backdrop-blur-md border-b border-[#2f3336] px-4 py-3">
