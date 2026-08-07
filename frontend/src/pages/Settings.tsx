@@ -8,7 +8,7 @@ export default function Settings() {
       <div className="sticky top-0 z-10 bg-[rgba(0,0,0,0.65)] backdrop-blur-md border-b border-[#2f3336] px-4 py-4">
         <h1 className="font-bold text-lg">Settings</h1>
       </div>
-
+      
       <div className="flex border-b border-[#2f3336]">
         {(['account', 'privacy', 'notifications'] as const).map((tab) => (
           <button
