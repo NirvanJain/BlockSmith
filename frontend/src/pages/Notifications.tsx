@@ -6,7 +6,6 @@ const notifications = [
   { id: 3, type: 'repost', user: 'Alex Rivera', content: 'reposted your post', time: '6h' },
   { id: 4, type: 'mention', user: 'Maya Patel', content: 'mentioned you in a post', time: '1d' },
 ]
-
 export default function Notifications() {
   const [activeTab, setActiveTab] = useState<'all' | 'mentions'>('all')
   return (
