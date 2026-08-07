@@ -60,7 +60,7 @@ export default function Settings() {
                 className="w-full bg-[#202327] text-[#e7e9ea] py-3 px-4 rounded text-sm outline-none focus:ring-1 focus:ring-[#1d9bf0]"
               />
             </div>
-            
+
             <button className="bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white font-bold text-sm py-3 px-6 rounded-full">
               Save changes
             </button>
@@ -75,6 +75,7 @@ export default function Settings() {
                   <div className="font-bold text-sm">Protect your posts</div>
                   <div className="text-[#71767b] text-sm mt-1">Only approved followers can see your posts</div>
                 </div>
+                
                 <button className="w-12 h-6 bg-[#1d9bf0] rounded-full relative">
                   <span className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full" />
                 </button>
