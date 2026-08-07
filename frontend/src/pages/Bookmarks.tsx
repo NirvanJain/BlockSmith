@@ -9,6 +9,7 @@ const bookmarkedPosts = [
     timestamp: '2d',
     stats: { replies: 32, reposts: 67, likes: 234, views: 5670 },
   },
+  
   {
     id: '2',
     author: { name: 'Sarah Chen', username: 'sarahchen' },
