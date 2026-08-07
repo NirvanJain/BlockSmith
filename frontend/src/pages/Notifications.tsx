@@ -9,7 +9,6 @@ const notifications = [
 
 export default function Notifications() {
   const [activeTab, setActiveTab] = useState<'all' | 'mentions'>('all')
-
   return (
     <div>
       <div className="sticky top-0 z-10 bg-[rgba(0,0,0,0.65)] backdrop-blur-md border-b border-[#2f3336]">
