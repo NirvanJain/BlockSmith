@@ -22,6 +22,7 @@ const mockPosts = [
     timestamp: '4h',
     stats: { replies: 8, reposts: 15, likes: 42, views: 856 },
   },
+    
   {
     id: '3',
     author: { name: 'Sarah Chen', username: 'sarahchen' },
