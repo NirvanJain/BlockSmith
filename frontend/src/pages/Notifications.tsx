@@ -33,7 +33,6 @@ export default function Notifications() {
           </button>
         </div>
       </div>
-
       <div>
         {notifications
           .filter((n) => activeTab === 'all' || n.type === 'mention')
@@ -48,7 +47,7 @@ export default function Notifications() {
                 <span className="text-[#71767b] text-sm ml-2">· {n.time}</span>
               </div>
             </div>
-            
+
           ))}
       </div>
     </div>
