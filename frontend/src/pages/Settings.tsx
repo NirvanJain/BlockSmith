@@ -34,6 +34,7 @@ export default function Settings() {
                 className="w-full bg-[#202327] text-[#e7e9ea] py-3 px-4 rounded text-sm outline-none focus:ring-1 focus:ring-[#1d9bf0]"
               />
             </div>
+            
             <div>
               <label className="block text-[#71767b] text-sm mb-2">Bio</label>
               <textarea
