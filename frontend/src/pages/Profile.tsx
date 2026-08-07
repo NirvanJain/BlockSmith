@@ -22,6 +22,7 @@ const userPosts = [
     timestamp: '3h',
     stats: { replies: 24, reposts: 45, likes: 156, views: 2340 },
   },
+  
   {
     id: '2',
     author: { name: 'Nirvan Jain', username: 'NirvanJain' },
