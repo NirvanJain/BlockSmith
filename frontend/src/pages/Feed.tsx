@@ -55,7 +55,7 @@ export default function Feed() {
             className={`flex-1 py-3 text-sm transition-colors hover:bg-[rgba(231,233,234,0.1)] ${
               activeTab === 'foryou' ? 'font-bold border-b-2 border-[#1d9bf0]' : 'text-[#71767b]'
             }`}
-          >
+          > 
             For you
           </button>
           <button
@@ -68,7 +68,6 @@ export default function Feed() {
           </button>
         </div>
       </div>
-
       {/* Compose */}
       <ComposePost />
 
