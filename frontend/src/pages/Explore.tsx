@@ -63,7 +63,7 @@ export default function Explore() {
               <div className="font-bold text-base">#AIAssistants</div>
               <div className="text-[#71767b] text-sm mt-1">8.2K posts</div>
             </div>
-            
+
             <div className="bg-[#16181c] rounded-lg p-4">
               <div className="text-[#71767b] text-xs mb-2">Programming · Trending</div>
               <div className="font-bold text-base">#TypeScript5</div>
@@ -79,6 +79,7 @@ export default function Explore() {
                 <span className="bg-[#3fb950] text-white text-xs font-bold px-2 py-1 rounded">Good First Issue</span>
                 <span className="text-[#71767b] text-sm">BlockSmith/BlockSmith</span>
               </div>
+              
               <h3 className="font-bold text-base">Add Clerk authentication middleware</h3>
               <p className="text-[#71767b] text-sm mt-2">We need to authenticate user endpoints using Clerk JWKS key validation.</p>
               <div className="flex items-center gap-4 mt-3 text-sm">
