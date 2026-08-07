@@ -1,5 +1,4 @@
 import { useState } from 'react'
-
 const notifications = [
   { id: 1, type: 'like', user: 'The Octocat', content: 'liked your post', time: '2h' },
   { id: 2, type: 'follow', user: 'Sarah Chen', content: 'followed you', time: '4h' },
