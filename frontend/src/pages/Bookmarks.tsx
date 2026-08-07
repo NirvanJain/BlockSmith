@@ -9,7 +9,7 @@ const bookmarkedPosts = [
     timestamp: '2d',
     stats: { replies: 32, reposts: 67, likes: 234, views: 5670 },
   },
-  
+
   {
     id: '2',
     author: { name: 'Sarah Chen', username: 'sarahchen' },
@@ -27,6 +27,7 @@ export default function Bookmarks() {
         <h1 className="font-bold">Bookmarks</h1>
         <div className="text-[#71767b] text-xs">@NirvanJain</div>
       </div>
+      
       {bookmarkedPosts.map((post) => (
         <Post key={post.id} {...post} />
       ))}
