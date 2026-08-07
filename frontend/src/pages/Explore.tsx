@@ -36,7 +36,7 @@ export default function Explore() {
           >
             Issues
           </button>
-          
+
           <button
             onClick={() => setActiveTab('developers')}
             className={`flex-1 py-3 text-sm transition-colors hover:bg-[rgba(231,233,234,0.1)] ${
@@ -57,11 +57,13 @@ export default function Explore() {
               <div className="font-bold text-base">#WebAssembly</div>
               <div className="text-[#71767b] text-sm mt-1">12.5K posts</div>
             </div>
+
             <div className="bg-[#16181c] rounded-lg p-4">
               <div className="text-[#71767b] text-xs mb-2">Technology · Trending</div>
               <div className="font-bold text-base">#AIAssistants</div>
               <div className="text-[#71767b] text-sm mt-1">8.2K posts</div>
             </div>
+            
             <div className="bg-[#16181c] rounded-lg p-4">
               <div className="text-[#71767b] text-xs mb-2">Programming · Trending</div>
               <div className="font-bold text-base">#TypeScript5</div>
