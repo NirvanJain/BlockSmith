@@ -31,6 +31,7 @@ const mockPosts = [
     timestamp: '6h',
     stats: { replies: 5, reposts: 8, likes: 34, views: 420 },
   },
+
   {
     id: '4',
     author: { name: 'Alex Rivera', username: 'alexrivera' },
