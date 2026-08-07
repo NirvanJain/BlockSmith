@@ -42,7 +42,7 @@ export default function Settings() {
                 className="w-full bg-[#202327] text-[#e7e9ea] py-3 px-4 rounded text-sm outline-none focus:ring-1 focus:ring-[#1d9bf0] resize-none h-24"
               />
             </div>
-            
+
             <div>
               <label className="block text-[#71767b] text-sm mb-2">Location</label>
               <input
@@ -51,6 +51,7 @@ export default function Settings() {
                 className="w-full bg-[#202327] text-[#e7e9ea] py-3 px-4 rounded text-sm outline-none focus:ring-1 focus:ring-[#1d9bf0]"
               />
             </div>
+
             <div>
               <label className="block text-[#71767b] text-sm mb-2">Website</label>
               <input
@@ -59,6 +60,7 @@ export default function Settings() {
                 className="w-full bg-[#202327] text-[#e7e9ea] py-3 px-4 rounded text-sm outline-none focus:ring-1 focus:ring-[#1d9bf0]"
               />
             </div>
+            
             <button className="bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white font-bold text-sm py-3 px-6 rounded-full">
               Save changes
             </button>
