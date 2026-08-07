@@ -40,7 +40,6 @@ const mockPosts = [
     stats: { replies: 3, reposts: 7, likes: 28, views: 312 },
   },
 ]
-
 export default function Feed() {
   const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou')
   return (
