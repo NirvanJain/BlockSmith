@@ -12,7 +12,7 @@ const mockPosts = [
     timestamp: '2h',
     stats: { replies: 12, reposts: 24, likes: 89, views: 1240 },
   },
-
+  
   {
     id: '2',
     author: { name: 'The Octocat', username: 'octocat' },
@@ -22,7 +22,7 @@ const mockPosts = [
     timestamp: '4h',
     stats: { replies: 8, reposts: 15, likes: 42, views: 856 },
   },
-    
+  
   {
     id: '3',
     author: { name: 'Sarah Chen', username: 'sarahchen' },
