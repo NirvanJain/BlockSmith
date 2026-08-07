@@ -79,7 +79,7 @@ export default function Explore() {
                 <span className="bg-[#3fb950] text-white text-xs font-bold px-2 py-1 rounded">Good First Issue</span>
                 <span className="text-[#71767b] text-sm">BlockSmith/BlockSmith</span>
               </div>
-              
+
               <h3 className="font-bold text-base">Add Clerk authentication middleware</h3>
               <p className="text-[#71767b] text-sm mt-2">We need to authenticate user endpoints using Clerk JWKS key validation.</p>
               <div className="flex items-center gap-4 mt-3 text-sm">
@@ -87,6 +87,7 @@ export default function Explore() {
                 <span className="text-[#71767b]">Easy</span>
               </div>
             </div>
+            
             <div className="bg-[#16181c] rounded-lg p-4 border-l-4 border-[#f85149]">
               <div className="flex items-center gap-2 mb-3">
                 <span className="bg-[#f85149] text-white text-xs font-bold px-2 py-1 rounded">Bug</span>
