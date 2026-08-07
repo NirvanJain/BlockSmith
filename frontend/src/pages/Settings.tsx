@@ -75,10 +75,11 @@ export default function Settings() {
                   <div className="font-bold text-sm">Protect your posts</div>
                   <div className="text-[#71767b] text-sm mt-1">Only approved followers can see your posts</div>
                 </div>
-                
+
                 <button className="w-12 h-6 bg-[#1d9bf0] rounded-full relative">
                   <span className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full" />
                 </button>
+                
               </div>
             </div>
             <div className="bg-[#16181c] rounded-lg p-4">
