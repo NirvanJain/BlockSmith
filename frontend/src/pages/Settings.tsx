@@ -101,6 +101,7 @@ export default function Settings() {
           <div className="space-y-4">
             <div className="bg-[#16181c] rounded-lg p-4">
               <div className="flex items-center justify-between">
+
                 <div>
                   <div className="font-bold text-sm">Push notifications</div>
                   <div className="text-[#71767b] text-sm mt-1">Receive push notifications for activity</div>
@@ -112,6 +113,7 @@ export default function Settings() {
 
               </div>
             </div>
+            
             <div className="bg-[#16181c] rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
