@@ -9,7 +9,9 @@ pub fn generate_hash(
     contribution_link: &str,
     previous_hash: &str, 
 ) -> String {
+
     let input = format!(
+        
         "{}{}{}{}{}{}{}",
         index,
         timestamp,
