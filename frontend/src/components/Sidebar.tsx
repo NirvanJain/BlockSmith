@@ -1,13 +1,13 @@
 import { NavLink } from 'react-router-dom'
 
 const navItems = [
-  { name: 'Home', path: '/' },
-  { name: 'Explore', path: '/explore' },
-  { name: 'Notifications', path: '/notifications' },
-  { name: 'Messages', path: '/messages' },
-  { name: 'Profile', path: '/profile/nirvanjain' },
-  { name: 'Settings', path: '/settings' },
-]
+    { name: 'Home', path: '/' },
+    { name: 'Explore', path: '/explore' },
+    { name: 'Notifications', path: '/notifications' },
+    { name: 'Messages', path: '/messages' },
+    { name: 'Profile', path: '/profile/nirvanjain' },
+    { name: 'Settings', path: '/settings' },
+  ]
 
 export default function Sidebar() {
   return (
