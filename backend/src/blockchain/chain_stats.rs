@@ -6,7 +6,7 @@ pub struct ChainStats {
     pub total_blocks: usize,
     pub total_contributors: usize,
 }
- 
+
 pub fn calculate_chain_stats(
     blockchain: &Blockchain,
 ) -> ChainStats {
