@@ -45,7 +45,6 @@ impl Blockchain {
             self.chain.last().unwrap();
 
         let index = previous_block.index + 1;
-
         let timestamp =
             Utc::now().to_rfc3339();
 
@@ -72,7 +71,6 @@ impl Blockchain {
             previous_hash,
             hash,
         };
-
         self.chain.push(block);
     }
 
