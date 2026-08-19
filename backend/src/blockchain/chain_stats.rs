@@ -19,7 +19,6 @@ pub fn calculate_chain_stats(
                     .clone()
             })
             .collect();
-
     ChainStats {
         total_blocks:
             blockchain.chain.len(),
