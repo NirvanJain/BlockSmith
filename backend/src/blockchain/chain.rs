@@ -1,20 +1,16 @@
 use chrono::Utc;
-
 use crate::blockchain::{
     block::Block,
     hashing::generate_hash,
 };
-
 pub struct Blockchain {
     pub chain: Vec<Block>,
 }
-
 impl Default for Blockchain {
     fn default() -> Self {
         Self::new()
     }
 }
-
 impl Blockchain {
     pub fn new() -> Self {
         let genesis_block = Block {
@@ -28,12 +24,10 @@ impl Blockchain {
             previous_hash: "0".to_string(),
             hash: "genesis_hash".to_string(),
         };
-
         Self {
             chain: vec![genesis_block],
         }
     }
-
     pub fn add_block(
         &mut self,
         contributor: String,
