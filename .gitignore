@@ -1,0 +1,24 @@
+# Build outputs
+dist/
+target/
+
+# Dependencies
+node_modules/
+
+# Environment & secrets
+.env
+.dev.vars
+
+# Local dev state
+.wrangler/
+
+# Editor & IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
