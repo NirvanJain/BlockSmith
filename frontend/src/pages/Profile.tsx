@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Post from '../components/Post'
 
 const userData = {
@@ -35,6 +36,7 @@ const userPosts = [
 ]
 
 export default function Profile() {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<'posts' | 'replies' | 'issues' | 'pr'>('posts')
   const [isFollowing, setIsFollowing] = useState(false)
 
@@ -43,7 +45,12 @@ export default function Profile() {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-[rgba(0,0,0,0.65)] backdrop-blur-md border-b border-[#2f3336]">
         <div className="flex items-center gap-6 px-4 py-3">
-          <button className="p-2 -ml-2 rounded-full hover:bg-[rgba(231,233,234,0.1)]">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            aria-label="Go back"
+            className="p-2 -ml-2 rounded-full hover:bg-[rgba(231,233,234,0.1)]"
+          >
             <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
               <path d="M7.414 13l5.043 5.04-1.414 1.42L3.586 12l7.457-7.46 1.414 1.42L7.414 11H21v2H7.414z" />
             </svg>
