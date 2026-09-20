@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Post from '../components/Post'
 import ComposePost from '../components/ComposePost'
 
+// Feed page: renders the main social timeline with a composer and mixed content cards.
 const mockPosts = [
   {
     id: '1',
