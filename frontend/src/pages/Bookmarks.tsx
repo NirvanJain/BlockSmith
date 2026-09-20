@@ -1,5 +1,6 @@
 import Post from '../components/Post'
 
+// Bookmarks page: shows content the user has saved for later reading.
 const bookmarkedPosts = [
   {
     id: '1',
