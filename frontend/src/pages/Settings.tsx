@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+// Settings page: manages user preferences across account, privacy, and notifications.
 export default function Settings() {
   const [activeTab, setActiveTab] = useState<'account' | 'privacy' | 'notifications'>('account')
 
