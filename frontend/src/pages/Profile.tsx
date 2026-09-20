@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Post from '../components/Post'
 
+// Profile page: displays a developer profile, stats, and content history.
 const userData = {
   name: 'Nirvan Jain',
   username: 'NirvanJain',
