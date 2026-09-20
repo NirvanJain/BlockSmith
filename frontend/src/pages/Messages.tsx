@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 
+// Messages page: handles the conversation sidebar and the active chat thread UI.
 const conversations = [
   { id: 1, name: 'The Octocat', username: 'octocat', lastMessage: 'Hey! Would love to collaborate.', time: '2h', unread: true },
   { id: 2, name: 'Sarah Chen', username: 'sarahchen', lastMessage: 'The PR looks great!', time: '5h', unread: false },
