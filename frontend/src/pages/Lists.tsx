@@ -1,3 +1,4 @@
+// Lists page: displays curated groups of contributors or topics the user follows.
 export default function Lists() {
   const lists = [
     { id: 1, name: 'Rust Contributors', members: 24 },
