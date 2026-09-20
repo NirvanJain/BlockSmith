@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+// Explore page: lets users search and browse trending topics, open issues, and developers.
 export default function Explore() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'trending' | 'issues' | 'developers'>('trending')
